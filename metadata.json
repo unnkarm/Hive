@@ -1,0 +1,6 @@
+{
+  "name": "ProductHive",
+  "description": "A high-impact workforce intelligence platform using multi-camera activity translation and zone tracking.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}
