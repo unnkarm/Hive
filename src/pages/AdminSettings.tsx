@@ -59,7 +59,7 @@ export function AdminSettings() {
         <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-white/30 flex items-center gap-3">
           <BellRing className="w-4 h-4" /> Alert Boundaries
         </h2>
-        <div className="glass p-8 border-white/5 grid grid-cols-2 gap-12">
+        <div className="glass p-8 border-white/5 grid grid-cols-1 gap-12">
            <div className="space-y-4">
              <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-60">Inactivity Trigger</h3>
              <input type="range" className="w-full accent-white" />
@@ -67,15 +67,6 @@ export function AdminSettings() {
                 <span>0m</span>
                 <span>Active: 15m</span>
                 <span>60m</span>
-             </div>
-           </div>
-           <div className="space-y-4">
-             <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-60">Crowding Density</h3>
-             <input type="range" className="w-full accent-white" />
-             <div className="flex justify-between text-[10px] font-mono opacity-50 uppercase tracking-widest">
-                <span>Lite</span>
-                <span>Active: 85%</span>
-                <span>Critical</span>
              </div>
            </div>
         </div>

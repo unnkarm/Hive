@@ -1,28 +1,48 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import { useAppSimulator } from '../hooks';
-import { Camera, Signal, Activity, Info, MoreVertical } from 'lucide-react';
+import { Camera, Signal, Activity, Info, MoreVertical, Target } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { LiveTrackingPortal } from './LiveTrackingPortal';
 
 export function AdminCameras() {
   const { cameras } = useAppSimulator();
+  const [activeTab, setActiveTab] = useState<'live' | 'general'>('general');
 
   return (
     <div className="p-8 space-y-8">
       <header className="flex justify-between items-end mb-8">
         <div>
-          <h1 className="text-4xl font-extrabold uppercase tracking-tighter">Optical Matrix</h1>
+          <h1 className="text-4xl font-extrabold uppercase tracking-tighter">Cameras</h1>
           <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em]">Multi-stream ingestion grid</p>
         </div>
-        <button className="px-6 py-2 bg-white text-black font-bold uppercase tracking-widest text-[10px] hover:invert transition-all">
-          Connect New Node
-        </button>
+        <div className="flex gap-4">
+          <button 
+            onClick={() => setActiveTab('live')}
+            className={cn("px-6 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'live' ? "bg-white text-black border-white" : "border-white/20 text-white hover:border-white")}
+          >
+            Live Tracking of Individual
+          </button>
+          <button 
+            onClick={() => setActiveTab('general')}
+            className={cn("px-6 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'general' ? "bg-white text-black border-white" : "border-white/20 text-white hover:border-white")}
+          >
+            General Camera Footage
+          </button>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {cameras.map((cam) => (
-          <CameraTile key={cam.id} camera={cam} />
-        ))}
-      </div>
+      {activeTab === 'general' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {cameras.map((cam) => (
+            <CameraTile key={cam.id} camera={cam} />
+          ))}
+        </div>
+      ) : (
+        <div className="glass p-8 border-white/5 flex flex-col w-full h-full min-h-[600px]">
+          <LiveTrackingPortal />
+        </div>
+      )}
     </div>
   );
 }

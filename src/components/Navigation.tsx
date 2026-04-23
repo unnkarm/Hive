@@ -36,7 +36,6 @@ export function AdminSideNav() {
 
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { name: 'Live Tracking', path: '/admin/live', icon: Target },
     { name: 'Cameras', path: '/admin/cameras', icon: Camera },
     { name: 'Sessions', path: '/admin/sessions', icon: Users },
     { name: 'Enrollment', path: '/admin/registration', icon: UserPlus },

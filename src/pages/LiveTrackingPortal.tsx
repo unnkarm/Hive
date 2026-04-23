@@ -32,7 +32,7 @@ export function LiveTrackingPortal() {
   ];
 
   return (
-    <div className="h-screen bg-hive-black text-white p-4 flex flex-col font-mono uppercase tracking-tighter">
+    <div className="w-full h-full min-h-[600px] flex flex-col font-mono uppercase tracking-tighter">
       {/* Header */}
       <header className="border-b border-hive-border pb-4 mb-4 flex items-center justify-between px-2">
         <div className="flex gap-8 text-[11px] font-bold">

@@ -12,6 +12,7 @@ import { AdminAlerts } from './pages/AdminAlerts';
 import { AdminSettings } from './pages/AdminSettings';
 import { SubjectRegistration } from './pages/SubjectRegistration';
 import { LiveTrackingPortal } from './pages/LiveTrackingPortal';
+import { AdminAnalytics } from './pages/AdminAnalytics';
 import { Navbar, AdminSideNav } from './components/Navigation';
 
 function AdminLayout() {
@@ -50,7 +51,7 @@ export default function App() {
           <Route path="cameras" element={<AdminCameras />} />
           <Route path="sessions" element={<AdminSessions />} />
           <Route path="registration" element={<SubjectRegistration />} />
-          <Route path="analytics" element={<AdminDashboard />} /> {/* Analytics reuse dashboard widgets for MVP */}
+          <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="alerts" element={<AdminAlerts />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
