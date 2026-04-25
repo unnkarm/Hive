@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminCameras } from './pages/AdminCameras';
@@ -14,6 +14,10 @@ import { SubjectRegistration } from './pages/SubjectRegistration';
 import { LiveTrackingPortal } from './pages/LiveTrackingPortal';
 import { AdminAnalytics } from './pages/AdminAnalytics';
 import { Navbar, AdminSideNav } from './components/Navigation';
+import { LoginPage } from './pages/LoginPage';
+import { EmployeeDashboard } from './pages/EmployeeDashboard';
+import { AuthProvider, useAuth } from './lib/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 function AdminLayout() {
   return (
@@ -37,26 +41,63 @@ function SiteLayout() {
   );
 }
 
-export default function App() {
+function EmployeeLayout() {
+  const { logout } = useAuth();
   return (
-    <Router>
-      <Routes>
-        <Route element={<SiteLayout />}>
-          <Route path="/" element={<LandingPage />} />
-        </Route>
-        
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="live" element={<LiveTrackingPortal />} />
-          <Route path="cameras" element={<AdminCameras />} />
-          <Route path="sessions" element={<AdminSessions />} />
-          <Route path="registration" element={<SubjectRegistration />} />
-          <Route path="analytics" element={<AdminAnalytics />} />
-          <Route path="alerts" element={<AdminAlerts />} />
-          <Route path="settings" element={<AdminSettings />} />
-        </Route>
-      </Routes>
-    </Router>
+    <div className="min-h-screen bg-hive-black flex flex-col">
+      <nav className="border-b border-white/5 px-8 py-4 flex justify-between items-center bg-hive-dark/80 backdrop-blur-md sticky top-0 z-50">
+         <div className="text-xl font-black uppercase tracking-tighter">ProductHive <span className="text-white/20">Workplace</span></div>
+         <button 
+           onClick={logout}
+           className="text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 border border-white/10 hover:bg-white hover:text-black transition-all"
+         >
+           Close Session
+         </button>
+      </nav>
+      <main className="flex-1 technical-grid">
+        <Outlet />
+      </main>
+    </div>
   );
 }
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route element={<SiteLayout />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+          </Route>
+          
+          <Route path="/admin" element={
+            <ProtectedRoute allowedRole="ADMIN">
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AdminDashboard />} />
+            <Route path="live" element={<LiveTrackingPortal />} />
+            <Route path="cameras" element={<AdminCameras />} />
+            <Route path="sessions" element={<AdminSessions />} />
+            <Route path="registration" element={<SubjectRegistration />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="alerts" element={<AdminAlerts />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
+
+          <Route path="/employee" element={
+            <ProtectedRoute allowedRole="EMPLOYEE">
+              <EmployeeLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<EmployeeDashboard />} />
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
+}
+
 

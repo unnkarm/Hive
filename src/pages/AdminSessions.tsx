@@ -2,8 +2,8 @@ import { motion } from 'motion/react';
 import { useAppSimulator } from '../hooks';
 import { Clock, MapPin, Hash, BarChartHorizontal } from 'lucide-react';
 import { cn } from '../lib/utils';
-
 import { useState } from 'react';
+import { EmployeeAnalyticsDashboard } from '../components/EmployeeAnalyticsDashboard';
 
 export function AdminSessions() {
   const { sessions } = useAppSimulator();
@@ -29,13 +29,16 @@ export function AdminSessions() {
               <Hash className="w-32 h-32" />
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
+            <div 
+              onClick={() => setExpandedSession(expandedSession === session.id ? null : session.id)}
+              className="flex flex-col lg:flex-row gap-8 items-start lg:items-center cursor-pointer group/card"
+            >
               {/* Identity & Basic Info */}
               <div className="w-full lg:w-48 space-y-2">
                 <div className="text-lg font-extrabold tracking-tighter flex items-center gap-2">
                   <span className="text-white/20 font-light">#</span>{session.id}
                 </div>
-                <div className="text-sm font-bold mt-2">
+                <div className="text-sm font-bold mt-2 group-hover/card:text-white transition-colors">
                   {i % 2 === 0 ? 'Rahul Sharma' : 'Priya Patel'}
                 </div>
                 <div className="text-[10px] text-white/50">
@@ -95,47 +98,23 @@ export function AdminSessions() {
                 </div>
               </div>
 
-              <button 
-                onClick={() => setExpandedSession(expandedSession === session.id ? null : session.id)}
-                className="px-4 py-2 border border-white/20 hover:border-white text-[9px] font-bold uppercase tracking-widest transition-all"
+              <div 
+                className={cn(
+                  "px-4 py-2 border text-[9px] font-bold uppercase tracking-widest transition-all",
+                  expandedSession === session.id ? "bg-white text-black border-white" : "border-white/20 group-hover/card:border-white text-white"
+                )}
               >
-                {expandedSession === session.id ? 'Close Profile' : 'Full Profile (30 Days)'}
-              </button>
+                {expandedSession === session.id ? 'Hide Dashboard' : '30-Day Analytics'}
+              </div>
             </div>
+
             
             {/* 30 Days Expanded View */}
             {expandedSession === session.id && (
-              <div className="mt-8 pt-8 border-t border-white/10 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="space-y-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/50">Last 30 Days Summary</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between"><span className="opacity-50">Total Hours Worked:</span> <span>184h 20m</span></div>
-                      <div className="flex justify-between"><span className="opacity-50">Attendance Rate:</span> <span className="text-hive-success">96%</span></div>
-                      <div className="flex justify-between"><span className="opacity-50">Avg Daily Active:</span> <span>7h 15m</span></div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/50">Detected Anomalies</h4>
-                    <div className="bg-hive-warning/10 border border-hive-warning/20 p-3 text-hive-warning text-xs">
-                      Date: Oct 12 - Extended break detected (1h 45m).
-                    </div>
-                    <div className="bg-hive-error/10 border border-hive-error/20 p-3 text-hive-error text-xs">
-                      Date: Oct 18 - Accessed restricted Zone C during non-working hours.
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/50">Recent Snapshots</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      <img src={`https://picsum.photos/seed/${session.id}-1/150/150?grayscale`} className="w-full aspect-square object-cover opacity-60 hover:opacity-100 transition-opacity" />
-                      <img src={`https://picsum.photos/seed/${session.id}-2/150/150?grayscale`} className="w-full aspect-square object-cover opacity-60 hover:opacity-100 transition-opacity" />
-                      <img src={`https://picsum.photos/seed/${session.id}-3/150/150?grayscale`} className="w-full aspect-square object-cover opacity-60 hover:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <EmployeeAnalyticsDashboard 
+                employeeId={session.id} 
+                name={i % 2 === 0 ? 'Rahul Sharma' : 'Priya Patel'} 
+              />
             )}
           </motion.div>
         ))}
@@ -143,3 +122,4 @@ export function AdminSessions() {
     </div>
   );
 }
+
