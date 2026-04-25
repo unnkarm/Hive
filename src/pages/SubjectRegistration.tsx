@@ -49,8 +49,8 @@ export function SubjectRegistration() {
   return (
     <div className="p-8 space-y-8 max-w-4xl">
       <header>
-        <h1 className="text-4xl font-extrabold uppercase tracking-tighter">Identity Enrollment</h1>
-        <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em]">Pseudonymous Subject Onboarding</p>
+        <h1 className="text-4xl font-extrabold uppercase tracking-tighter">Employee Enrollment</h1>
+        <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em]">Add new employee to tracking system</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -122,30 +122,32 @@ export function SubjectRegistration() {
         {/* Status & Options */}
         <div className="space-y-6">
           <div className="glass p-8 border-white/5 space-y-6">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white/50">Enrollment Protocol</h3>
-            
-            <p className="text-xs text-white/40 leading-relaxed uppercase tracking-wider">
-               Hold subject within framing guides for automated hashing. 
-               System will generate a unique session signature without storing biometric RAW data.
-            </p>
-
+            <h3 className="text-xs font-bold uppercase tracking-widest text-white/50">Employee Details</h3>
             <div className="space-y-4">
-              <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
-                <ShieldCheck className="w-4 h-4 text-hive-success" />
-                <span>Zero-Knowledge Encryption Active</span>
-              </div>
-              <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
-                <ShieldCheck className="w-4 h-4 text-hive-success" />
-                <span>Hash-Only Persistence Enabled</span>
-              </div>
+              <input type="text" placeholder="Full Name" className="w-full bg-white/5 border border-white/10 p-3 text-sm" />
+              <input type="text" placeholder="Address" className="w-full bg-white/5 border border-white/10 p-3 text-sm" />
+              <input type="text" placeholder="Employee Details (e.g. Department, Role)" className="w-full bg-white/5 border border-white/10 p-3 text-sm" />
+            </div>
+
+            <h3 className="text-xs font-bold uppercase tracking-widest text-white/50 mt-8">Photo Registration</h3>
+            <div className="flex gap-4 mb-4">
+              <button className="flex-1 py-2 border border-white text-xs font-bold uppercase tracking-widest hover:bg-white hover:text-black">Take Photos</button>
+              <button className="flex-1 py-2 border border-white/20 text-white/50 text-xs font-bold uppercase tracking-widest hover:border-white hover:text-white">Upload Photos</button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="border border-white/10 p-4 text-center text-xs opacity-50">Front</div>
+              <div className="border border-white/10 p-4 text-center text-xs opacity-50">Left</div>
+              <div className="border border-white/10 p-4 text-center text-xs opacity-50">Right</div>
+              <div className="border border-white/10 p-4 text-center text-xs opacity-50">Full Body</div>
             </div>
 
             <button 
-              disabled={isScanning || !stream}
+              disabled={isScanning}
               onClick={registerSubject}
               className={cn(
                 "w-full py-4 font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3",
-                isScanning || !stream 
+                isScanning 
                   ? "bg-white/5 text-white/20 cursor-not-allowed" 
                   : "bg-white text-black hover:invert"
               )}
@@ -153,12 +155,12 @@ export function SubjectRegistration() {
               {isScanning ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Hashing In Progress...
+                  Analyzing Photos...
                 </>
               ) : (
                 <>
                   <UserCheck className="w-4 h-4" />
-                  Generate Signature
+                  Enroll Employee
                 </>
               )}
             </button>
