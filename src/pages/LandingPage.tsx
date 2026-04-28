@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Monitor, ShieldCheck, Zap, Layers } from 'lucide-react';
 import { Logo } from '../components/Logo';
+import { Link } from 'react-router-dom';
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export function LandingPage() {
     <div className="relative">
       {/* Background Graphic */}
       <div className="fixed inset-0 technical-grid opacity-20 pointer-events-none" />
+      
       
       {/* Hero Section */}
       <section className="relative h-screen flex flex-col items-center justify-center pt-32 text-center px-4 overflow-hidden">
@@ -41,8 +43,8 @@ export function LandingPage() {
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <button 
-              onClick={() => navigate('/admin')}
-              className="px-10 py-4 bg-white text-black font-bold uppercase tracking-[0.2em] hover:bg-white/90 transition-all flex items-center justify-center gap-2"
+              onClick={() => navigate('/login')}
+              className="px-10 py-4 bg-white text-black font-bold uppercase tracking-[0.2em] hover:bg-hive-success hover:text-black transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(0,255,0,0.4)]"
             >
               View Live Demo <ArrowRight className="w-4 h-4" />
             </button>
@@ -160,7 +162,7 @@ export function LandingPage() {
             <div className="space-y-4">
               <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/30">Portal</h4>
               <nav className="flex flex-col gap-2">
-                <a href="/admin" className="text-xs hover:text-white transition-colors">Login</a>
+                <Link to="/login" className="text-xs hover:text-white transition-colors">Login</Link>
                 <a href="#" className="text-xs hover:text-white transition-colors">Status</a>
               </nav>
             </div>
