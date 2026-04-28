@@ -3,16 +3,19 @@ import { motion } from 'motion/react';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
 import { Flame, Users, TrendingUp, AlertTriangle, Clock, MapPin, Zap, Activity } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
 
 import { EmployeeAnalyticsDashboard } from '../components/EmployeeAnalyticsDashboard';
 
 export function AdminAnalytics() {
+  const { theme } = useAuth();
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
+  const isLight = theme === 'light';
 
   // Productivity activities (Working, Eating, Discussing)
   const productivityData = [
-    { activity: 'Working', count: 45, color: '#10B981' },
-    { activity: 'Eating', count: 8, color: '#F59E0B' },
+    { activity: 'Working', count: 45, color: '#06B6D4' }, // Hive Cyan
+    { activity: 'Eating', count: 8, color: '#10B981' },
     { activity: 'Discussing', count: 12, color: '#3B82F6' },
   ];
 
@@ -27,34 +30,34 @@ export function AdminAnalytics() {
 
   // Combined data for overall view
   const combinedProductivity = [
-    { name: 'Working', value: 45, color: '#10B981' },
-    { name: 'Eating', value: 8, color: '#F59E0B' },
+    { name: 'Working', value: 45, color: '#06B6D4' }, // Primary Hive Cyan
+    { name: 'Eating', value: 8, color: '#10B981' },
     { name: 'Discussing', value: 12, color: '#3B82F6' },
-    { name: 'Talking', value: 15, color: '#EF4444' },
-    { name: 'Smoking', value: 5, color: '#8B5CF6' },
-    { name: 'Loitering', value: 7, color: '#EC4899' },
+    { name: 'Talking', value: 15, color: '#8B5CF6' },
+    { name: 'Smoking', value: 5, color: '#EF4444' },
+    { name: 'Loitering', value: 7, color: '#64748B' },
   ];
 
   const stats = [
-    { label: 'Avg Productivity', value: '88.4%', icon: Zap, color: 'text-hive-success' },
-    { label: 'Zone Density', value: 'OPTIMAL', icon: MapPin, color: 'text-blue-400' },
-    { label: 'Active Alerts', value: '2', icon: AlertTriangle, color: 'text-amber-400' },
-    { label: 'System Load', value: '14%', icon: Activity, color: 'text-white/40' },
+    { label: 'Avg Productivity', value: '88.4%', icon: Zap, color: 'text-hive-brand' },
+    { label: 'Zone Density', value: 'OPTIMAL', icon: MapPin, color: 'text-blue-500' },
+    { label: 'Active Alerts', value: '2', icon: AlertTriangle, color: 'text-hive-brand' },
+    { label: 'System Load', value: '14%', icon: Activity, color: 'text-hive-text-40' },
   ];
 
   return (
     <div className="p-8 space-y-8 max-w-7xl">
       <header className="mb-12">
-        <h1 className="text-4xl font-extrabold uppercase tracking-tighter">Operational Analytics</h1>
-        <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em]">High-fidelity productivity tracking and zone correlation</p>
+        <h1 className="text-4xl font-extrabold uppercase tracking-tighter text-hive-text">Operational Analytics</h1>
+        <p className="text-hive-text-40 text-[10px] uppercase font-bold tracking-[0.2em]">High-fidelity productivity tracking and zone correlation</p>
       </header>
 
       {!selectedEmployee ? (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {stats.map((stat, i) => (
-              <div key={i} className="bg-white/5 border border-white/5 p-6 rounded-lg">
-                <div className="flex items-center gap-2 mb-2 text-white/40">
+              <div key={i} className="bg-hive-text-10 border border-hive-border p-6 rounded-lg glass">
+                <div className="flex items-center gap-2 mb-2 text-hive-text-40">
                   <stat.icon className="w-3 h-3" />
                   <span className="text-[9px] font-bold uppercase tracking-widest">{stat.label}</span>
                 </div>
@@ -65,30 +68,38 @@ export function AdminAnalytics() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
             {/* Overall Distribution */}
-            <div className="lg:col-span-2 glass p-8 border-white/5 rounded-lg space-y-6">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-white/50 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" /> Global Activity Breakdown
+            <div className="lg:col-span-2 glass p-8 rounded-lg space-y-6">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-hive-text-50 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-hive-brand" /> Global Activity Breakdown
               </h3>
               <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={combinedProductivity}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "rgba(15, 23, 42, 0.05)" : "rgba(255, 255, 255, 0.05)"} vertical={false} />
                     <XAxis 
                       dataKey="name" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: '#ffffff40', fontSize: 10, fontWeight: 'bold' }} 
+                      tick={{ fill: isLight ? 'rgba(15, 23, 42, 0.4)' : 'rgba(255, 255, 255, 0.4)', fontSize: 10, fontWeight: 'bold' }} 
                     />
                     <YAxis 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: '#ffffff40', fontSize: 10, fontWeight: 'bold' }} 
+                      tick={{ fill: isLight ? 'rgba(15, 23, 42, 0.4)' : 'rgba(255, 255, 255, 0.4)', fontSize: 10, fontWeight: 'bold' }} 
                     />
                     <Tooltip 
-                      cursor={{ fill: '#ffffff05' }}
-                      contentStyle={{ backgroundColor: '#0A0A0A', border: '1px solid #ffffff10', fontSize: '10px', fontWeight: 'bold' }}
+                      cursor={{ fill: isLight ? 'rgba(15, 23, 42, 0.02)' : 'rgba(255, 255, 255, 0.02)' }}
+                      contentStyle={{ 
+                        backgroundColor: isLight ? '#FFFFFF' : '#0A0A0A', 
+                        borderRadius: '12px',
+                        border: `1px solid ${isLight ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255, 255, 255, 0.08)'}`, 
+                        fontSize: '10px', 
+                        fontWeight: 'bold',
+                        color: isLight ? '#0F172A' : '#FFFFFF',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      }}
                     />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                       {combinedProductivity.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
@@ -99,8 +110,8 @@ export function AdminAnalytics() {
             </div>
 
             {/* Quick Metrics */}
-            <div className="glass p-8 border-white/5 rounded-lg space-y-8">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-white/50">Efficiency Index</h3>
+            <div className="glass p-8 rounded-lg space-y-8">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-hive-text-50">Efficiency Index</h3>
               <div className="space-y-6">
                 {[
                   { label: 'Work Focus', val: 92 },
@@ -109,23 +120,25 @@ export function AdminAnalytics() {
                 ].map((m, i) => (
                   <div key={i} className="space-y-2">
                     <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
-                      <span className="text-white/60">{m.label}</span>
-                      <span className="text-white">{m.val}%</span>
+                      <span className="text-hive-text-60">{m.label}</span>
+                      <span className="text-hive-text">{m.val}%</span>
                     </div>
-                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-hive-text-10 rounded-full overflow-hidden">
                        <motion.div 
                          initial={{ width: 0 }}
                          animate={{ width: `${m.val}%` }}
-                         className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                         className={cn(
+                           "h-full shadow-[0_0_10px_rgba(6,182,212,0.2)] bg-hive-brand"
+                         )}
                        />
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="pt-6 border-t border-white/5">
-                 <div className="p-4 bg-hive-success/10 border border-hive-success/20 rounded">
-                    <div className="text-[10px] font-bold text-hive-success uppercase tracking-widest mb-1">Recommendation</div>
-                    <p className="text-[9px] text-white/50 leading-relaxed uppercase">
+              <div className="pt-6 border-t border-hive-border">
+                 <div className="p-4 bg-hive-brand/10 border border-hive-brand/20 rounded-lg">
+                    <div className="text-[10px] font-bold text-hive-accent uppercase tracking-widest mb-1">Recommendation</div>
+                    <p className="text-[9px] text-hive-text-50 leading-relaxed uppercase">
                       Individual focus is high. Zone B capacity can be optimized by 12%.
                     </p>
                  </div>
@@ -134,45 +147,45 @@ export function AdminAnalytics() {
           </div>
 
           {/* Combined Productivity & Zone Table */}
-          <div className="glass p-8 border-white/5 rounded-lg">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white/50 mb-8 flex items-center gap-2">
-              <Users className="w-4 h-4" /> Personnel Productivity Intel
+          <div className="glass p-8 rounded-lg">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-hive-text-50 mb-8 flex items-center gap-2">
+              <Users className="w-4 h-4 text-hive-brand" /> Personnel Productivity Intel
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-left pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 px-4">Employee</th>
-                    <th className="text-left pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 px-4">Active Zone</th>
-                    <th className="text-center pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-hive-success px-4">Working (h)</th>
-                    <th className="text-center pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 px-4">Non-Prod (h)</th>
-                    <th className="text-center pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 px-4">Actions</th>
+                  <tr className="border-b border-hive-border">
+                    <th className="text-left pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-hive-text-30 px-4">Employee</th>
+                    <th className="text-left pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-hive-text-30 px-4">Active Zone</th>
+                    <th className="text-center pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-hive-brand px-4">Working (h)</th>
+                    <th className="text-center pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-hive-text-30 px-4">Non-Prod (h)</th>
+                    <th className="text-center pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-hive-text-30 px-4">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-hive-border">
                   {employeeData.map((emp, idx) => (
-                    <tr key={idx} className="group hover:bg-white/[0.02] transition-colors">
+                    <tr key={idx} className="group hover:bg-hive-text-10 transition-colors">
                       <td className="py-4 px-4">
-                        <div className="text-sm font-black text-white/90">{emp.name}</div>
-                        <div className="text-[8px] font-bold uppercase text-white/30 tracking-widest">{emp.status}</div>
+                        <div className="text-sm font-black text-hive-text-90">{emp.name}</div>
+                        <div className="text-[8px] font-bold uppercase text-hive-text-30 tracking-widest">{emp.status}</div>
                       </td>
                       <td className="py-4 px-4">
-                        <span className="px-2 py-1 bg-white/5 border border-white/10 rounded text-[9px] font-bold text-white/60">
+                        <span className="px-2 py-1 bg-hive-text-10 border border-hive-border rounded text-[9px] font-bold text-hive-text-60">
                           {emp.zone}
                         </span>
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <div className="text-sm font-mono font-bold text-hive-success">{emp.working}h</div>
+                        <div className="text-sm font-mono font-bold text-hive-brand">{emp.working}h</div>
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <div className="text-sm font-mono font-bold text-white/20">
+                        <div className="text-sm font-mono font-bold text-hive-text-20">
                           {(emp.talking + emp.smoking + emp.loitering).toFixed(1)}h
                         </div>
                       </td>
                       <td className="py-4 px-4 text-center">
                         <button 
                           onClick={() => setSelectedEmployee(emp.name)}
-                          className="text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 bg-white text-black rounded hover:bg-hive-success transition-all opacity-0 group-hover:opacity-100"
+                          className="text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 bg-hive-accent text-hive-black rounded hover:bg-hive-success transition-all opacity-0 group-hover:opacity-100 shadow-md"
                         >
                           View Details
                         </button>
@@ -186,19 +199,19 @@ export function AdminAnalytics() {
         </>
       ) : (
         <div className="space-y-6">
-          <div className="flex items-center justify-between bg-white/5 p-6 rounded-lg border border-white/10">
+          <div className="flex items-center justify-between glass p-6 rounded-lg">
             <div className="flex items-center gap-6">
-               <div className="w-12 h-12 rounded-lg bg-hive-success/20 flex items-center justify-center border border-hive-success/30">
-                  <Users className="w-6 h-6 text-hive-success" />
+               <div className="w-12 h-12 rounded-lg bg-hive-brand/20 flex items-center justify-center border border-hive-brand/30">
+                  <Users className="w-6 h-6 text-hive-brand" />
                </div>
                <div>
-                 <h2 className="text-2xl font-black uppercase tracking-tighter">{selectedEmployee}</h2>
-                 <p className="text-[10px] font-bold uppercase text-white/40 tracking-widest">30-Day Intelligence Deep Dive</p>
+                 <h2 className="text-2xl font-black uppercase tracking-tighter text-hive-text">{selectedEmployee}</h2>
+                 <p className="text-[10px] font-bold uppercase text-hive-text-40 tracking-widest">30-Day Intelligence Deep Dive</p>
                </div>
             </div>
             <button 
               onClick={() => setSelectedEmployee(null)}
-              className="text-[10px] font-black uppercase tracking-widest px-6 py-3 border border-white/20 hover:bg-white hover:text-black transition-all rounded"
+              className="text-[10px] font-black uppercase tracking-widest px-6 py-3 border border-hive-border hover:border-hive-brand hover:text-hive-brand transition-all rounded shadow-sm text-hive-text"
             >
               Back to Overview
             </button>

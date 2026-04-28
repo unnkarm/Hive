@@ -45,11 +45,11 @@ function EmployeeLayout() {
   const { logout } = useAuth();
   return (
     <div className="min-h-screen bg-hive-black flex flex-col">
-      <nav className="border-b border-white/5 px-8 py-4 flex justify-between items-center bg-hive-dark/80 backdrop-blur-md sticky top-0 z-50">
-         <div className="text-xl font-black uppercase tracking-tighter">ProductHive <span className="text-white/20">Workplace</span></div>
+      <nav className="border-b border-hive-border px-8 py-4 flex justify-between items-center bg-hive-dark/80 backdrop-blur-md sticky top-0 z-50">
+         <div className="text-xl font-black uppercase tracking-tighter text-hive-text">ProductHive <span className="text-hive-text-20">Workplace</span></div>
          <button 
            onClick={logout}
-           className="text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 border border-white/10 hover:bg-white hover:text-black transition-all"
+           className="text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 border border-hive-border text-hive-text hover:bg-hive-accent hover:text-hive-black transition-all rounded shadow-sm"
          >
            Close Session
          </button>

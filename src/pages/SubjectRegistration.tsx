@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Camera, RefreshCw, ShieldCheck, UserCheck, X, Upload, Check } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useAuth } from '../lib/AuthContext';
 
 type PhotoType = 'front' | 'left' | 'right' | 'fullBody';
 
@@ -13,6 +14,7 @@ interface PhotoState {
 }
 
 export function SubjectRegistration() {
+  const { theme } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -90,39 +92,41 @@ export function SubjectRegistration() {
     fullBody: 'Full Body'
   };
 
+  const isLight = theme === 'light';
+
   return (
     <div className="p-8 space-y-8 max-w-6xl">
       <header>
-        <h1 className="text-4xl font-extrabold uppercase tracking-tighter">Employee Enrollment</h1>
-        <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em]">Add new employee to tracking system - Capture 4 angles for facial recognition</p>
+        <h1 className="text-4xl font-extrabold uppercase tracking-tighter text-hive-text">Employee Enrollment</h1>
+        <p className="text-hive-text-40 text-[10px] uppercase font-bold tracking-[0.2em]">Add new employee to tracking system - Capture 4 angles for facial recognition</p>
       </header>
 
       <div className="space-y-8">
         {/* Enrollment Form - Now Above Camera */}
-        <div className="glass p-6 border-white/5 space-y-6 rounded-lg">
+        <div className="glass p-6 rounded-lg space-y-6">
           <div className="flex flex-col md:flex-row gap-8 items-end">
             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-white/30 ml-1">Full Name</label>
-                <input type="text" placeholder="e.g. Rahul Sharma" className="w-full bg-white/5 border border-white/10 p-3 text-sm rounded outline-none focus:border-white/30 transition-all" />
+                <label className="text-[10px] font-bold uppercase tracking-widest text-hive-text-30 ml-1">Full Name</label>
+                <input type="text" placeholder="e.g. Rahul Sharma" className="w-full bg-hive-input-bg border border-hive-border p-3 text-sm rounded outline-none focus:border-hive-text-40 transition-all text-hive-text placeholder:text-hive-text-20" />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-white/30 ml-1">Department</label>
-                <input type="text" placeholder="e.g. Operations" className="w-full bg-white/5 border border-white/10 p-3 text-sm rounded outline-none focus:border-white/30 transition-all" />
+                <label className="text-[10px] font-bold uppercase tracking-widest text-hive-text-30 ml-1">Department</label>
+                <input type="text" placeholder="e.g. Operations" className="w-full bg-hive-input-bg border border-hive-border p-3 text-sm rounded outline-none focus:border-hive-text-40 transition-all text-hive-text placeholder:text-hive-text-20" />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-white/30 ml-1">Role / Designation</label>
-                <input type="text" placeholder="e.g. Manager" className="w-full bg-white/5 border border-white/10 p-3 text-sm rounded outline-none focus:border-white/30 transition-all" />
+                <label className="text-[10px] font-bold uppercase tracking-widest text-hive-text-30 ml-1">Role / Designation</label>
+                <input type="text" placeholder="e.g. Manager" className="w-full bg-hive-input-bg border border-hive-border p-3 text-sm rounded outline-none focus:border-hive-text-40 transition-all text-hive-text placeholder:text-hive-text-20" />
               </div>
             </div>
             <button 
               disabled={isScanning || !photos.front || !photos.left || !photos.right || !photos.fullBody}
               onClick={registerSubject}
               className={cn(
-                "px-8 py-3.5 font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 rounded-lg text-sm min-w-[200px]",
+                "px-8 py-3.5 font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 rounded-lg text-sm min-w-[200px] shadow-lg",
                 isScanning || !photos.front || !photos.left || !photos.right || !photos.fullBody
-                  ? "bg-white/5 text-white/20 cursor-not-allowed border border-white/5" 
-                  : "bg-white text-black hover:invert border border-white"
+                  ? "bg-hive-text-10 text-hive-text-20 cursor-not-allowed border border-hive-border" 
+                  : "bg-hive-accent text-hive-black hover:bg-hive-success border border-hive-accent"
               )}
             >
               <UserCheck className="w-4 h-4" />
@@ -134,7 +138,7 @@ export function SubjectRegistration() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Camera View */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="glass border-white/5 relative aspect-video overflow-hidden bg-hive-black flex items-center justify-center rounded-lg">
+          <div className="glass relative aspect-video overflow-hidden bg-black flex items-center justify-center rounded-lg">
             {stream && mode === 'camera' ? (
               <>
                 <video 
@@ -145,7 +149,7 @@ export function SubjectRegistration() {
                   className="w-full h-full object-cover grayscale opacity-60"
                 />
                 
-                {/* Scanning UI Overlay */}
+                {/* Scanning UI Overlay - High contrast for dark video */}
                 <div className="absolute inset-0 pointer-events-none border-4 border-white/5 m-4 rounded-lg">
                    <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/40" />
                    <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/40" />
@@ -181,11 +185,11 @@ export function SubjectRegistration() {
                 </div>
               </>
             ) : !stream ? (
-              <div className="flex flex-col items-center gap-4 text-white/20">
+              <div className="flex flex-col items-center gap-4 text-hive-text-20">
                 <Camera className="w-16 h-16" />
                 <button 
                   onClick={startCamera}
-                  className="text-[10px] uppercase font-bold tracking-widest hover:text-white"
+                  className="text-[10px] uppercase font-bold tracking-widest hover:text-hive-text transition-colors"
                 >
                   Activate Optical Sensor
                 </button>
@@ -193,11 +197,11 @@ export function SubjectRegistration() {
             ) : null}
 
             {error && (
-              <div className="absolute inset-0 bg-hive-black/90 flex flex-col items-center justify-center p-8 text-center gap-4 rounded-lg">
+              <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center p-8 text-center gap-4 rounded-lg">
                 <span className="text-hive-error text-xs font-bold uppercase tracking-widest">{error}</span>
                 <button 
                   onClick={startCamera}
-                  className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest border border-white/20 px-4 py-2 hover:bg-white/5"
+                  className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest border border-white/20 px-4 py-2 hover:bg-white/5 transition-colors text-white"
                 >
                   <RefreshCw className="w-3 h-3" /> Retry Connection
                 </button>
@@ -206,15 +210,15 @@ export function SubjectRegistration() {
           </div>
 
           {/* Photo Type Selector */}
-          <div className="glass p-4 border-white/5 rounded-lg">
+          <div className="glass p-4 rounded-lg">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-white/50">Select Photo Type</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-hive-text-50">Select Photo Type</h3>
               <div className="flex gap-2">
                 <button 
                   onClick={() => setMode('camera')}
                   className={cn(
-                    "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded transition-all",
-                    mode === 'camera' ? "bg-white text-black" : "border border-white/20 text-white/60"
+                    "px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded transition-all",
+                    mode === 'camera' ? "bg-hive-accent text-hive-black shadow-sm" : "border border-hive-border text-hive-text-60 hover:text-hive-text"
                   )}
                 >
                   <Camera className="w-3 h-3 inline mr-1" /> Camera
@@ -222,8 +226,8 @@ export function SubjectRegistration() {
                 <button 
                   onClick={() => setMode('upload')}
                   className={cn(
-                    "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded transition-all",
-                    mode === 'upload' ? "bg-white text-black" : "border border-white/20 text-white/60"
+                    "px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded transition-all",
+                    mode === 'upload' ? "bg-hive-accent text-hive-black shadow-sm" : "border border-hive-border text-hive-text-60 hover:text-hive-text"
                   )}
                 >
                   <Upload className="w-3 h-3 inline mr-1" /> Upload
@@ -236,10 +240,10 @@ export function SubjectRegistration() {
                   key={type}
                   onClick={() => setActivePhoto(type)}
                   className={cn(
-                    "py-3 px-2 text-[10px] font-bold uppercase tracking-widest rounded transition-all border",
+                    "py-3 px-2 text-[10px] font-black uppercase tracking-widest rounded transition-all border",
                     activePhoto === type 
-                      ? "bg-white text-black border-white" 
-                      : "bg-white/5 text-white/60 border-white/10 hover:border-white/30",
+                      ? "bg-hive-accent text-hive-black border-hive-accent shadow-sm" 
+                      : "bg-hive-text-10 text-hive-text-60 border-hive-border hover:border-hive-text-30",
                     photos[type] && "ring-2 ring-hive-success"
                   )}
                 >
@@ -256,15 +260,15 @@ export function SubjectRegistration() {
               onClick={capturePhoto}
               disabled={!stream}
               className={cn(
-                "w-full py-4 font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 rounded-lg",
-                stream ? "bg-white text-black hover:invert" : "bg-white/5 text-white/20 cursor-not-allowed"
+                "w-full py-4 font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 rounded-lg shadow-xl",
+                stream ? "bg-hive-accent text-hive-black hover:bg-hive-success" : "bg-hive-text-10 text-hive-text-20 cursor-not-allowed"
               )}
             >
               <Camera className="w-4 h-4" />
               Capture {photoLabels[activePhoto]}
             </button>
           ) : (
-            <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center hover:border-white/40 transition-colors">
+            <div className="border-2 border-dashed border-hive-border rounded-lg p-8 text-center hover:border-hive-text-40 transition-colors bg-hive-text-10 group cursor-pointer">
               <input
                 type="file"
                 accept="image/*"
@@ -273,8 +277,8 @@ export function SubjectRegistration() {
                 id="photo-upload"
               />
               <label htmlFor="photo-upload" className="cursor-pointer flex flex-col items-center gap-3">
-                <Upload className="w-8 h-8 text-white/40" />
-                <span className="text-xs font-bold uppercase tracking-widest text-white/60">
+                <Upload className="w-8 h-8 text-hive-text-40 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-black uppercase tracking-widest text-hive-text-60 group-hover:text-hive-text">
                   Click to upload {photoLabels[activePhoto]}
                 </span>
               </label>
@@ -284,24 +288,26 @@ export function SubjectRegistration() {
 
         {/* Status & Options */}
           <div className="space-y-6">
-            <div className="glass p-6 border-white/5 space-y-6 rounded-lg h-full">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-white/50">Biometric Snapshots</h3>
+            <div className="glass p-6 rounded-lg h-full">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-hive-text-50 mb-6 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4" /> Biometric Snapshots
+              </h3>
               <div className="grid grid-cols-2 gap-3">
                 {(Object.keys(photoLabels) as PhotoType[]).map((type) => (
                   <div 
                     key={type} 
                     className={cn(
-                      "border p-2 rounded text-center text-[10px] font-bold uppercase tracking-widest transition-all",
-                      photos[type] ? "border-hive-success bg-hive-success/10 text-hive-success" : "border-white/10 text-white/30"
+                      "border p-2 rounded text-center text-[10px] font-black uppercase tracking-widest transition-all",
+                      photos[type] ? "border-hive-success bg-hive-success/10 text-hive-success" : "border-hive-border text-hive-text-30 bg-hive-text-10"
                     )}
                   >
                     {photos[type] ? (
-                      <div className="aspect-square mb-2 rounded overflow-hidden">
+                      <div className="aspect-square mb-2 rounded overflow-hidden shadow-sm">
                         <img src={photos[type]!} alt={photoLabels[type]} className="w-full h-full object-cover" />
                       </div>
                     ) : (
-                      <div className="aspect-square mb-2 rounded bg-white/5 flex items-center justify-center">
-                        <Camera className="w-4 h-4 opacity-10" />
+                      <div className="aspect-square mb-2 rounded bg-hive-text-10 flex items-center justify-center">
+                        <Camera className="w-4 h-4 text-hive-text-20" />
                       </div>
                     )}
                     {photoLabels[type]}
@@ -314,11 +320,11 @@ export function SubjectRegistration() {
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-hive-success p-6 text-black rounded-lg mt-4"
+                    className="bg-hive-success p-6 text-hive-black rounded-lg mt-8 shadow-2xl"
                   >
                     <div className="flex justify-between items-start mb-4">
-                       <h4 className="text-[10px] font-bold uppercase tracking-widest">Enrollment Success</h4>
-                       <button onClick={() => setRegisteredId(null)}><X className="w-4 h-4" /></button>
+                       <h4 className="text-[10px] font-black uppercase tracking-widest">Enrollment Success</h4>
+                       <button onClick={() => setRegisteredId(null)} className="hover:scale-110 transition-transform"><X className="w-4 h-4" /></button>
                     </div>
                     <div className="text-4xl font-extrabold tracking-tighter mb-2">
                       {registeredId}
