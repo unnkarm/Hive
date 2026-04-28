@@ -14,12 +14,15 @@ interface AuthContextType {
   login: (role: UserRole, email: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  privacyMode: boolean;
+  setPrivacyMode: (mode: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [privacyMode, setPrivacyMode] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('hive_user');
@@ -45,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, privacyMode, setPrivacyMode }}>
       {children}
     </AuthContext.Provider>
   );

@@ -70,7 +70,7 @@ export function AdminSideNav() {
         <span className="text-lg font-bold tracking-tighter uppercase">ProductHive <span className="text-[10px] opacity-40 ml-1">v1.2</span></span>
       </div>
 
-      <div className="px-8 pb-8">
+      <div className="px-8 pb-8 space-y-4">
          <div className="bg-white/5 border border-white/5 p-4 rounded flex items-center gap-3">
             <div className="w-8 h-8 bg-white/10 rounded flex items-center justify-center">
                <Shield className="w-4 h-4 text-white/60" />
@@ -79,6 +79,14 @@ export function AdminSideNav() {
                <div className="text-[9px] font-bold text-white/40 uppercase tracking-widest truncate">{user?.name || 'Admin'}</div>
                <div className="text-[8px] text-emerald-400 font-bold uppercase tracking-widest">Active Shell</div>
             </div>
+         </div>
+
+         {/* Mode Toggle */}
+         <div className="flex items-center justify-between px-2 py-3 bg-white/[0.02] border border-white/5 rounded-sm">
+            <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Privacy Mode</span>
+            <button className="w-8 h-4 bg-white/10 rounded-full relative">
+               <div className="absolute left-1 top-1 w-2 h-2 bg-hive-success rounded-full" />
+            </button>
          </div>
       </div>
 
