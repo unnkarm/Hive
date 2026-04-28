@@ -146,9 +146,9 @@ export function AdminDashboard() {
         <KPICard icon={AlertCircle} label="Active Alerts" value={stats.activeAlerts.toString()} color="text-hive-error" />
       </div>
 
-      {/* Worker Productivity section with daily/weekly/monthly scores */}
-      <div className="grid grid-cols-1 gap-8 mt-8">
-        <div className="glass p-6 border-white/5 rounded-lg">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+        {/* Worker Productivity section */}
+        <div className="lg:col-span-2 glass p-6 border-white/5 rounded-lg">
           <h3 className="text-xs font-bold uppercase tracking-widest text-white/50 mb-6 flex items-center gap-2">
             <TrendingUp className="w-4 h-4" /> Worker Productivity - Score out of 10
           </h3>
@@ -213,95 +213,53 @@ export function AdminDashboard() {
                   </div>
                   
                   <div className="flex items-center gap-8">
-                    {/* Daily Score */}
-                    <div className="text-center">
-                      <div className={cn("text-lg font-bold font-mono", getScoreColor(worker.dailyScore))}>
-                        {worker.dailyScore}
-                      </div>
-                      <div className="text-[8px] opacity-30 uppercase">/10</div>
-                    </div>
-                    
-                    {/* Weekly Score */}
-                    <div className="text-center">
-                      <div className={cn("text-lg font-bold font-mono", getScoreColor(worker.weeklyScore))}>
-                        {worker.weeklyScore}
-                      </div>
-                      <div className="text-[8px] opacity-30 uppercase">/10</div>
-                    </div>
-                    
-                    {/* Monthly Score */}
-                    <div className="text-center">
-                      <div className={cn("text-lg font-bold font-mono", getScoreColor(worker.monthlyScore))}>
-                        {worker.monthlyScore}
-                      </div>
-                      <div className="text-[8px] opacity-30 uppercase">/10</div>
-                    </div>
-
-                    {/* Hours Worked */}
-                    <div className="text-center min-w-[80px]">
-                      <div className="flex items-center gap-1 text-sm font-mono text-white/80">
-                        <Clock className="w-3 h-3" /> {worker.hoursWorked}
-                      </div>
-                      <div className="text-[8px] opacity-30 uppercase">Hours Today</div>
+                    {/* Scores */}
+                    <div className="flex items-center gap-4">
+                      <div className={cn("text-sm font-mono font-bold", getScoreColor(worker.dailyScore))}>{worker.dailyScore}</div>
+                      <div className={cn("text-sm font-mono font-bold", getScoreColor(worker.weeklyScore))}>{worker.weeklyScore}</div>
+                      <div className={cn("text-sm font-mono font-bold", getScoreColor(worker.monthlyScore))}>{worker.monthlyScore}</div>
                     </div>
 
                     <ChevronRight className={cn(
-                      "w-5 h-5 text-white/40 transition-transform",
+                      "w-4 h-4 text-white/20 transition-transform",
                       expandedWorker === worker.id && "rotate-90"
                     )} />
                   </div>
                 </div>
 
-                {/* Expanded Detailed Overview */}
+                {/* Expanded View */}
                 {expandedWorker === worker.id && (
                   <motion.div 
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mt-2 p-4 bg-white/5 rounded-lg border border-white/10"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 p-4 bg-white/5 rounded border border-white/10 space-y-4"
                   >
-                    <div className="grid grid-cols-2 gap-6">
-                      {/* Employee Info */}
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/50">Employee Details</h4>
-                        <div className="grid grid-cols-2 gap-3 text-[10px]">
-                          <div className="bg-white/5 p-3 rounded">
-                            <div className="text-white/40 mb-1">Employee ID</div>
-                            <div className="font-mono">EMP-{worker.id.padStart(3, '0')}</div>
+                    <div className="flex justify-between items-start">
+                       <div>
+                         <div className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Last Active</div>
+                         <div className="text-xs font-mono">{worker.lastActive}</div>
+                       </div>
+                       <div className="text-right">
+                         <div className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Hours Today</div>
+                         <div className="text-xs font-mono text-hive-success">{worker.hoursWorked}</div>
+                       </div>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      {worker.snapshots.map((s, i) => (
+                        <span key={i} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded-[2px] text-[8px] font-bold uppercase tracking-widest text-white/60">{s}</span>
+                      ))}
+                    </div>
+                    
+                    {/* Individual Reports */}
+                    <div className="pt-4 border-t border-white/10">
+                      <div className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-3">Individual Reports</div>
+                      <div className="space-y-2">
+                        <div className="p-3 bg-white/5 rounded border border-white/5">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="text-[9px] font-bold text-white/80">Shift Summary</span>
+                            <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">Log</span>
                           </div>
-                          <div className="bg-white/5 p-3 rounded">
-                            <div className="text-white/40 mb-1">Department</div>
-                            <div className="font-bold">{worker.department}</div>
-                          </div>
-                          <div className="bg-white/5 p-3 rounded col-span-2">
-                            <div className="text-white/40 mb-1">Last Active</div>
-                            <div className="font-mono">{worker.lastActive}</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Recent Activity Snapshots */}
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/50">Recent Activity Snapshots</h4>
-                        <div className="flex gap-2 flex-wrap">
-                          {worker.snapshots.map((activity, idx) => (
-                            <div 
-                              key={idx}
-                              className={cn(
-                                "px-3 py-1 rounded text-[9px] font-bold uppercase",
-                                activity === 'Working' ? 'bg-hive-success/20 text-hive-success' :
-                                activity === 'Discussion' ? 'bg-blue-500/20 text-blue-400' :
-                                activity === 'Meeting' ? 'bg-purple-500/20 text-purple-400' :
-                                activity === 'Break' || activity === 'Lunch' ? 'bg-amber-500/20 text-amber-400' :
-                                'bg-hive-error/20 text-hive-error'
-                              )}
-                            >
-                              {activity}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="text-[9px] text-white/40 mt-2">
-                          Last 5 activities recorded at timestamps
+                          <p className="text-[10px] text-white/50 italic">"Completed all tasks in Zone {worker.id === '1' ? 'A' : 'B'}. System stable."</p>
                         </div>
                       </div>
                     </div>
@@ -311,7 +269,49 @@ export function AdminDashboard() {
             ))}
           </div>
         </div>
+
+        {/* Employee Reports Sidebar */}
+        <div className="space-y-6">
+          <div className="glass p-6 border-white/5 rounded-lg h-full">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-white/50 mb-6 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-400" /> Recent Employee Reports
+            </h3>
+            
+            <div className="space-y-4">
+              {[
+                { name: 'Rahul Sharma', time: '10m ago', msg: 'Completed Zone A tasks ahead of schedule. Moving to Zone B.', status: 'General' },
+                { name: 'Priya Patel', time: '2h ago', msg: 'Camera feed in Zone C seems slightly blurry. Please check.', status: 'Issue' },
+                { name: 'Amit Singh', time: '4h ago', msg: 'Daily log: All operational nodes synced.', status: 'Log' },
+              ].map((report, i) => (
+                <div key={i} className="p-4 bg-white/5 border border-white/5 rounded-lg group hover:border-white/20 transition-all">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="text-xs font-bold">{report.name}</div>
+                      <div className="text-[8px] text-white/40 uppercase tracking-widest">{report.time}</div>
+                    </div>
+                    <span className={cn(
+                      "text-[8px] font-bold uppercase px-2 py-0.5 rounded",
+                      report.status === 'Issue' ? "bg-hive-error/20 text-hive-error" : "bg-blue-500/20 text-blue-400"
+                    )}>
+                      {report.status}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-white/60 leading-relaxed italic">"{report.msg}"</p>
+                  <div className="mt-3 flex gap-2">
+                    <button className="flex-1 py-1.5 bg-white/5 hover:bg-hive-success hover:text-black rounded text-[8px] font-bold uppercase tracking-widest transition-all">Resolve</button>
+                    <button className="py-1.5 px-3 bg-white/5 hover:bg-white/10 rounded text-[8px] font-bold uppercase tracking-widest transition-all">Details</button>
+                  </div>
+                </div>
+              ))}
+              
+              <button className="w-full py-3 border border-white/5 hover:border-white/20 text-[9px] font-bold uppercase tracking-widest text-white/40 hover:text-white transition-all rounded mt-4">
+                View All Reports
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+
     </div>
   );
 }

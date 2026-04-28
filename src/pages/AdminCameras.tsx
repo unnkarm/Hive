@@ -8,6 +8,8 @@ import { LiveTrackingPortal } from './LiveTrackingPortal';
 export function AdminCameras() {
   const { cameras } = useAppSimulator();
   const [activeTab, setActiveTab] = useState<'live' | 'general' | 'overview'>('general');
+  const [liveFilter, setLiveFilter] = useState<'person' | 'zone' | 'all'>('all');
+
 
   return (
     <div className="p-8 space-y-8">
@@ -45,12 +47,44 @@ export function AdminCameras() {
           ))}
         </div>
       ) : activeTab === 'live' ? (
-        <div className="glass p-8 border-white/5 flex flex-col w-full h-full min-h-[600px]">
-          <LiveTrackingPortal />
+        <div className="flex flex-col gap-6">
+          {/* Live Tracking Sub-Options */}
+          <div className="flex gap-4">
+            {[
+              { id: 'person', label: '1. Individual Person', icon: User },
+              { id: 'zone', label: '2. Zone Wise', icon: Target },
+              { id: 'all', label: '3. All Cameras', icon: Eye }
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setLiveFilter(opt.id as any)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 transition-all rounded text-[9px] font-bold uppercase tracking-widest",
+                  liveFilter === opt.id 
+                    ? "bg-white text-black border border-white" 
+                    : "bg-white/5 border border-white/10 text-white/60 hover:text-white hover:border-white/30"
+                )}
+              >
+                <opt.icon className={cn("w-3 h-3", liveFilter === opt.id ? "text-black" : "text-hive-success")} /> {opt.label}
+              </button>
+            ))}
+          </div>
+          
+          <div className="glass p-8 border-white/5 flex flex-col w-full h-full min-h-[600px]">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-hive-success animate-pulse" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Live Feed: {liveFilter === 'person' ? 'Target Focus' : liveFilter === 'zone' ? 'Zone Analysis' : 'Master Grid'}</span>
+              </div>
+            </div>
+            <LiveTrackingPortal mode={liveFilter} />
+          </div>
         </div>
+
       ) : (
         <OverviewFootage />
       )}
+
     </div>
   );
 }

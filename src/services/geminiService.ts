@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : (import.meta.env.VITE_GEMINI_API_KEY || "");
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 export async function generateInsight(stats: any) {
   const prompt = `You are an AI workforce intelligence expert for ProductHive. 
@@ -13,6 +14,7 @@ export async function generateInsight(stats: any) {
   Provide 1 short, professional, business-friendly insight (15-20 words) about workplace efficiency or safety. No jargon.`;
 
   try {
+    if (!ai) throw new Error("AI not initialized");
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,

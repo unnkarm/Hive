@@ -15,25 +15,36 @@ export function Navbar() {
   if (isAdmin || isEmployee || isLogin) return null;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-6 bg-transparent">
+    <nav className="fixed top-0 left-0 right-0 z-[100] flex justify-between items-center px-12 py-8 bg-black/50 backdrop-blur-xl border-b border-white/5">
       <Link to="/" className="flex items-center gap-2 group">
-        <Logo className="w-8 h-8 text-white group-hover:scale-110 transition-transform duration-500" />
-        <span className="text-xl font-bold tracking-[0.2em] uppercase">ProductHive</span>
+        <Logo className="w-10 h-10 text-white group-hover:scale-110 transition-transform duration-500" />
+        <span className="text-2xl font-black tracking-tighter uppercase">ProductHive</span>
       </Link>
 
-      <div className="hidden md:flex items-center gap-10">
-        {/* Navigation links can be added here */}
+      <div className="flex items-center gap-6">
+        {!isAuthenticated ? (
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link
+              to="/login"
+              className="px-8 py-3 bg-white text-black text-[11px] font-black uppercase tracking-[0.2em] hover:bg-hive-success transition-all duration-500 shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_rgba(0,255,0,0.5)] rounded-sm block"
+            >
+              Join Portal
+            </Link>
+          </motion.div>
+        ) : (
+          <Link
+            to={user?.role === 'ADMIN' ? '/admin' : '/employee'}
+            className="px-8 py-3 bg-white text-black text-[11px] font-black uppercase tracking-[0.2em] hover:bg-hive-success transition-all duration-500 shadow-[0_0_30px_rgba(255,255,255,0.3)] rounded-sm"
+          >
+            Dashboard
+          </Link>
+        )}
       </div>
-
-      {!isAuthenticated && (
-        <Link
-          to="/login"
-          className="px-6 py-2 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-hive-success hover:text-black transition-all duration-500 shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(0,255,0,0.4)] rounded-sm"
-        >
-          Join
-        </Link>
-      )}
     </nav>
+
   );
 }
 
@@ -42,15 +53,15 @@ export function AdminSideNav() {
   const { user, logout } = useAuth();
 
   const navItems = [
+    { name: 'Enrollment', path: '/admin/registration', icon: UserPlus },
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { name: 'Live Tracking', path: '/admin/live', icon: Activity },
     { name: 'Cameras', path: '/admin/cameras', icon: Camera },
     { name: 'Sessions', path: '/admin/sessions', icon: Users },
-    { name: 'Enrollment', path: '/admin/registration', icon: UserPlus },
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
     { name: 'Alerts', path: '/admin/alerts', icon: Bell },
     { name: 'Settings', path: '/admin/settings', icon: Settings },
   ];
+
 
   return (
     <div className="w-64 h-screen border-r border-hive-border flex flex-col bg-hive-dark sticky top-0">
@@ -87,12 +98,10 @@ export function AdminSideNav() {
             >
               <item.icon className={cn("w-4 h-4", isActive ? "text-black" : "text-white/40 group-hover:text-white")} />
               {item.name}
-              {item.name === 'Enrollment' && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
-              )}
             </Link>
           );
         })}
+
       </nav>
 
       <div className="p-8 border-t border-hive-border space-y-4">
@@ -108,8 +117,7 @@ export function AdminSideNav() {
         >
           <ArrowLeft className="w-3 h-3" /> Back to Website
         </Link>
-        <div className="flex items-center gap-2 opacity-50 text-[10px] uppercase tracking-widest pt-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-hive-success animate-pulse" />
+        <div className="flex items-center gap-2 opacity-30 text-[10px] uppercase tracking-widest pt-2">
           System Optimal
         </div>
       </div>

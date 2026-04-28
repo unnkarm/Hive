@@ -1,9 +1,13 @@
 import { motion } from 'motion/react';
 import { useAppSimulator } from '../hooks';
 import { cn } from '../lib/utils';
-import { Activity, Coffee, User, Briefcase, Zap, AlertTriangle } from 'lucide-react';
+import { Activity, Coffee, User, Briefcase, Zap, AlertTriangle, Target, Eye } from 'lucide-react';
 
-export function LiveTrackingPortal() {
+interface Props {
+  mode?: 'person' | 'zone' | 'all';
+}
+
+export function LiveTrackingPortal({ mode = 'all' }: Props) {
   const { cameras } = useAppSimulator();
 
   const occupancyData = [
@@ -21,14 +25,11 @@ export function LiveTrackingPortal() {
   ];
 
   const subjects = [
-    { id: 'E-021', status: 'WORKSTATION', time: '8h 21m' },
-    { id: 'E-004', status: 'MEETING ROOM', time: '4h 04m' },
-    { id: 'E-071', status: 'CANTEEN', time: '0h 05m' },
-    { id: 'E-012', status: 'CANTEEN', time: '0h 02m' },
-    { id: 'E-062', status: 'WORKSTATION', time: '7h 30m' },
-    { id: 'E-121', status: 'CO-LAB ROOM', time: '2h 10m' },
-    { id: 'E-135', status: 'CO-LAB ROOM', time: '1h 08m' },
-    { id: 'E-101', status: 'WORKSTATION', time: '3h 25m' },
+    { id: 'E-021', status: 'WORKSTATION', time: '8h 21m', name: 'Rahul Sharma' },
+    { id: 'E-004', status: 'MEETING ROOM', time: '4h 04m', name: 'Priya Patel' },
+    { id: 'E-071', status: 'CANTEEN', time: '0h 05m', name: 'Amit Singh' },
+    { id: 'E-012', status: 'CANTEEN', time: '0h 02m', name: 'Sneha Gupta' },
+    { id: 'E-062', status: 'WORKSTATION', time: '7h 30m', name: 'Vikram Mehta' },
   ];
 
   return (
@@ -36,7 +37,7 @@ export function LiveTrackingPortal() {
       {/* Header */}
       <header className="border-b border-hive-border pb-4 mb-4 flex items-center justify-between px-2">
         <div className="flex gap-8 text-[11px] font-bold">
-          <span className="opacity-40">PRODUCTIVE // STATUS: <span className="text-hive-success">LIVE</span></span>
+          <span className="opacity-40">TRACKING MODE: <span className={cn("text-hive-success", mode === 'person' ? "text-blue-400" : mode === 'zone' ? "text-amber-400" : "text-hive-success")}>{mode.toUpperCase()}</span></span>
           <span className="opacity-40">// SUBJECTS ACTIVE: <span className="text-white">214</span> <div className="inline-block w-2 h-2 rounded-full bg-hive-warning align-middle ml-1" /></span>
         </div>
       </header>
@@ -44,13 +45,16 @@ export function LiveTrackingPortal() {
       {/* Main Grid */}
       <div className="flex-1 grid grid-cols-12 gap-4 overflow-hidden">
         
-        {/* Left column: Presence */}
-        <div className="col-span-3 border border-hive-border p-4 flex flex-col gap-4 overflow-hidden">
+        {/* Left column: Subjects / Focus */}
+        <div className="col-span-3 border border-hive-border p-4 flex flex-col gap-4 overflow-hidden bg-white/[0.02]">
           <div>
-            <h2 className="text-[12px] font-bold opacity-60 mb-6">Presence & Productivity</h2>
+            <h2 className="text-[12px] font-bold opacity-60 mb-6 flex items-center gap-2">
+              {mode === 'person' ? <User className="w-4 h-4 text-blue-400" /> : <Activity className="w-4 h-4 text-white/40" />}
+              {mode === 'person' ? 'Subject Focus' : 'Presence Monitoring'}
+            </h2>
             <div className="flex items-baseline gap-2 mb-8">
-              <span className="text-4xl font-extrabold tracking-tighter">214</span>
-              <span className="text-[10px] opacity-40">Subjects Present</span>
+              <span className="text-4xl font-extrabold tracking-tighter">{mode === 'person' ? '01' : '214'}</span>
+              <span className="text-[10px] opacity-40">{mode === 'person' ? 'Target Active' : 'Subjects Present'}</span>
             </div>
           </div>
 
@@ -59,16 +63,19 @@ export function LiveTrackingPortal() {
               <div 
                 key={i} 
                 className={cn(
-                  "p-3 border border-white/5 flex justify-between items-center text-[10px] tracking-widest",
-                  i === 0 ? "bg-white/10 border-white/20" : "hover:bg-white/5"
+                  "p-3 border border-white/5 flex flex-col gap-1 text-[10px] tracking-widest transition-all",
+                  mode === 'person' && i === 0 ? "bg-blue-500/20 border-blue-500/40" : "hover:bg-white/5"
                 )}
               >
-                <div className="flex gap-2">
-                  <span className="opacity-80">{s.id}</span>
-                  <span className="opacity-20">/</span>
-                  <span className="opacity-40">{s.status}</span>
+                <div className="flex justify-between items-center">
+                  <span className="font-black text-white/90">{s.name}</span>
+                  <span className="opacity-40">{s.time}</span>
                 </div>
-                <span className="opacity-40">{s.time}</span>
+                <div className="flex gap-2">
+                  <span className="opacity-40">{s.id}</span>
+                  <span className="opacity-20">/</span>
+                  <span className={cn("opacity-60", mode === 'person' && i === 0 ? "text-blue-400" : "")}>{s.status}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -76,13 +83,21 @@ export function LiveTrackingPortal() {
 
         {/* Center column: Live Feed */}
         <div className="col-span-6 flex flex-col gap-4">
-          <div className="flex-1 border border-hive-border relative overflow-hidden group">
-            <h2 className="absolute top-4 left-4 z-20 text-[12px] font-bold opacity-60">Live Feed</h2>
+          <div className="flex-1 border border-hive-border relative overflow-hidden group bg-black">
+            <h2 className="absolute top-4 left-4 z-20 text-[12px] font-bold opacity-60 flex items-center gap-2">
+               {mode === 'person' ? <Target className="w-4 h-4 text-blue-400" /> : mode === 'zone' ? <Layers className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4 text-hive-success" />}
+               {mode === 'person' ? 'Optical Tracking: Rahul Sharma' : mode === 'zone' ? 'Zone Analysis: WORKSTATION_A' : 'Master Multi-Stream'}
+            </h2>
             
             {/* The Image */}
-            <div className="absolute inset-0 grayscale brightness-75 group-hover:brightness-90 transition-all duration-700">
+            <div className="absolute inset-0 grayscale brightness-50 group-hover:brightness-75 transition-all duration-700">
               <img 
-                src="https://picsum.photos/seed/tracking/1200/800?grayscale" 
+                src={mode === 'person' 
+                  ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop"
+                  : mode === 'zone'
+                  ? "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop"
+                  : "https://picsum.photos/seed/tracking/1200/800?grayscale"
+                }
                 className="w-full h-full object-cover"
                 alt="Tracking View"
                 referrerPolicy="no-referrer"
@@ -91,32 +106,60 @@ export function LiveTrackingPortal() {
 
             {/* Tracking Overlay */}
             <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-               <motion.div 
-                 initial={{ opacity: 0, scale: 0.9 }}
-                 animate={{ opacity: 1, scale: 1 }}
-                 className="w-48 h-96 border-2 border-white/40 relative"
-               >
-                 <div className="absolute -top-10 left-0 bg-black/80 px-3 py-1 border border-white/20 text-[10px] whitespace-nowrap">
-                   E-021 // COFFEE ZONE // 00H 1.2M
+               {mode === 'person' ? (
+                 <motion.div 
+                   initial={{ opacity: 0, scale: 0.9 }}
+                   animate={{ opacity: [0.4, 1, 0.4], scale: 1 }}
+                   transition={{ duration: 2, repeat: Infinity }}
+                   className="w-48 h-64 border-2 border-blue-500/60 relative"
+                 >
+                   <div className="absolute -top-10 left-0 bg-blue-500 text-black px-3 py-1 font-black text-[10px] whitespace-nowrap">
+                     SUBJECT IDENTIFIED // R. SHARMA
+                   </div>
+                   <div className="absolute -bottom-6 right-0 text-blue-400 text-[8px] font-bold">
+                     99.2% CONFIDENCE
+                   </div>
+                 </motion.div>
+               ) : mode === 'zone' ? (
+                 <div className="absolute inset-20 border-2 border-amber-500/40 grid grid-cols-4 grid-rows-4">
+                    {Array.from({ length: 16 }).map((_, i) => (
+                      <div key={i} className="border border-amber-500/10 flex items-center justify-center text-[8px] text-amber-500/20">
+                        {Math.floor(Math.random() * 90)}
+                      </div>
+                    ))}
+                    <div className="absolute -top-10 left-0 bg-amber-500 text-black px-3 py-1 font-black text-[10px] whitespace-nowrap">
+                      ZONE GRID: INTENSITY_MAP_V4
+                    </div>
                  </div>
-               </motion.div>
+               ) : (
+                 <div className="w-full h-full grid grid-cols-2 grid-rows-2">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="border border-white/5 relative">
+                         <div className="absolute top-2 left-2 text-[8px] opacity-40">CAM-0{i+1}</div>
+                         <div className="absolute inset-10 border border-hive-success/20 animate-pulse" />
+                      </div>
+                    ))}
+                 </div>
+               )}
             </div>
 
             {/* Technical Detail */}
             <div className="absolute bottom-4 right-4 z-20 text-[8px] opacity-30 flex flex-col items-end">
-               <span>BITRATE: 4.2 MBPS</span>
-               <span>FPS: 24.0</span>
-               <span>ISO: 800</span>
+               <span>BITRATE: {mode === 'all' ? '12.4' : '4.2'} MBPS</span>
+               <span>FPS: {mode === 'all' ? '60.0' : '24.0'}</span>
+               <span>GRID: {mode.toUpperCase()}_MODE_ACTIVE</span>
             </div>
           </div>
         </div>
 
-        {/* Right column: Insights */}
-        <div className="col-span-3 border border-hive-border p-4 flex flex-col gap-6 overflow-hidden">
+        {/* Right column: Analytics */}
+        <div className="col-span-3 border border-hive-border p-4 flex flex-col gap-6 overflow-hidden bg-white/[0.02]">
           <section>
-            <h2 className="text-[11px] font-bold opacity-60 mb-6">Operational Insights</h2>
+            <h2 className="text-[11px] font-bold opacity-60 mb-6 flex items-center gap-2">
+               <Zap className="w-4 h-4 text-hive-success" /> System Intelligence
+            </h2>
             <div className="space-y-4">
-               <div className="text-[9px] opacity-40 mb-2">Department Productivity</div>
+               <div className="text-[9px] opacity-40 mb-2">Resource Allocation</div>
                {deptData.map(d => (
                  <div key={d.name} className="space-y-1">
                    <div className="flex justify-between text-[10px] tracking-widest">
@@ -127,7 +170,7 @@ export function LiveTrackingPortal() {
                      <motion.div 
                        initial={{ width: 0 }}
                        animate={{ width: `${d.val}%` }}
-                       className="h-full bg-white opacity-80"
+                       className={cn("h-full bg-white", mode === 'person' ? "bg-blue-400" : mode === 'zone' ? "bg-amber-400" : "bg-white")}
                      />
                    </div>
                  </div>
@@ -136,33 +179,29 @@ export function LiveTrackingPortal() {
           </section>
 
           <section>
-            <h2 className="text-[10px] opacity-40 mb-4 tracking-widest">Zone Occupancy Rankings</h2>
+            <h2 className="text-[10px] opacity-40 mb-4 tracking-widest">Active Alerts</h2>
             <div className="space-y-2">
-              {occupancyData.map((o, i) => (
-                <div key={o.name} className="flex justify-between text-[10px] tracking-widest">
-                  <span className="opacity-60">{i + 1}. {o.name}</span>
-                  <span className="opacity-20 text-xs">...</span>
-                  <span className="opacity-80">{o.val}%</span>
+              {[
+                { type: 'IDLE', val: '0m 42s', color: 'text-white/40' },
+                { type: 'MOVEMENT', val: 'DETECTED', color: 'text-hive-success' },
+                { type: 'ANOMALY', val: 'NONE', color: 'text-white/20' }
+              ].map((a, i) => (
+                <div key={i} className="flex justify-between text-[10px] tracking-widest p-2 bg-white/5">
+                  <span className="opacity-60">{a.type}</span>
+                  <span className={cn("font-bold", a.color)}>{a.val}</span>
                 </div>
               ))}
             </div>
           </section>
 
           <section className="flex-1 flex flex-col gap-4">
-             <div className="space-y-2">
-               <div className="text-[9px] opacity-40 uppercase tracking-widest">Flagged Recent Zone Events</div>
-               <div className="p-3 bg-hive-warning/10 border border-hive-warning/20 text-hive-warning text-[9px] tracking-widest">
-                  E-B-S-900 / COFFEE ROOM / 12:13 AM
-               </div>
-             </div>
-
-             <div className="p-4 border border-white/5 bg-white/5 space-y-3">
+             <div className="p-4 border border-white/5 bg-black/40 space-y-3">
                <div className="text-[10px] font-bold opacity-60 flex items-center gap-2">
-                 <AlertTriangle className="w-3 h-3 text-hive-warning" />
-                 Operational Alert
+                 <ShieldCheck className="w-3 h-3 text-hive-success" />
+                 Secure Hash Output
                </div>
-               <p className="text-[9px] opacity-40 leading-relaxed">
-                 System Optimization Suggested: Increase system capacity for Zone Cluster-4.
+               <p className="text-[8px] font-mono opacity-20 break-all leading-tight">
+                 0x4A92B1C2D3E4F5A6B7C8D9E0F1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6D7E8F9A0
                </p>
              </div>
           </section>
@@ -172,3 +211,11 @@ export function LiveTrackingPortal() {
     </div>
   );
 }
+
+const Layers = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+    <polyline points="2 17 12 22 22 17" />
+    <polyline points="2 12 12 17 22 12" />
+  </svg>
+);
