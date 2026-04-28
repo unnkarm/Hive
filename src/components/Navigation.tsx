@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { LayoutDashboard, Camera, Users, BarChart3, Bell, Settings, UserPlus, ArrowLeft, LogOut, Shield } from 'lucide-react';
+import { LayoutDashboard, Camera, Users, BarChart3, Bell, Settings, UserPlus, ArrowLeft, LogOut, Shield, Activity } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Logo } from './Logo';
 import { useAuth } from '../lib/AuthContext';
@@ -9,9 +9,10 @@ export function Navbar() {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
   const isEmployee = location.pathname.startsWith('/employee');
+  const isLogin = location.pathname === '/login';
   const { isAuthenticated, user, logout } = useAuth();
 
-  if (isAdmin || isEmployee) return null;
+  if (isAdmin || isEmployee || isLogin) return null;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-6 bg-transparent">
@@ -21,31 +22,16 @@ export function Navbar() {
       </Link>
 
       <div className="hidden md:flex items-center gap-10">
-        {/* Links removed as per user request */}
+        {/* Navigation links can be added here */}
       </div>
 
-      {!isAuthenticated ? (
+      {!isAuthenticated && (
         <Link
           to="/login"
-          className="px-6 py-2 border border-white text-[10px] font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all duration-300"
+          className="px-6 py-2 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-hive-success hover:text-black transition-all duration-500 shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(0,255,0,0.4)] rounded-sm"
         >
-          Portal Login
+          Join
         </Link>
-      ) : (
-        <div className="flex items-center gap-6">
-          <Link 
-            to={user?.role === 'ADMIN' ? '/admin' : '/employee'}
-            className="text-[10px] font-bold uppercase tracking-widest text-white/60 hover:text-white"
-          >
-            Dashboard
-          </Link>
-          <button
-            onClick={logout}
-            className="px-6 py-2 bg-white text-black text-[10px] font-bold uppercase tracking-widest hover:bg-white/90 transition-all duration-300"
-          >
-            Logout
-          </button>
-        </div>
       )}
     </nav>
   );
@@ -57,6 +43,7 @@ export function AdminSideNav() {
 
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { name: 'Live Tracking', path: '/admin/live', icon: Activity },
     { name: 'Cameras', path: '/admin/cameras', icon: Camera },
     { name: 'Sessions', path: '/admin/sessions', icon: Users },
     { name: 'Enrollment', path: '/admin/registration', icon: UserPlus },
@@ -73,8 +60,8 @@ export function AdminSideNav() {
       </div>
 
       <div className="px-8 pb-8">
-         <div className="bg-white/5 border border-white/5 p-4 rounded-sm flex items-center gap-3">
-            <div className="w-8 h-8 bg-white/10 rounded-sm flex items-center justify-center">
+         <div className="bg-white/5 border border-white/5 p-4 rounded flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/10 rounded flex items-center justify-center">
                <Shield className="w-4 h-4 text-white/60" />
             </div>
             <div className="overflow-hidden">
@@ -92,14 +79,17 @@ export function AdminSideNav() {
               key={item.name}
               to={item.path}
               className={cn(
-                "group flex items-center gap-3 px-4 py-3 rounded-none text-xs font-medium uppercase tracking-widest transition-all",
+                "group flex items-center gap-3 px-4 py-3 rounded text-xs font-medium uppercase tracking-widest transition-all",
                 isActive 
-                  ? "bg-white text-black" 
+                  ? "bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.1)]" 
                   : "text-white/50 hover:bg-white/5 hover:text-white"
               )}
             >
               <item.icon className={cn("w-4 h-4", isActive ? "text-black" : "text-white/40 group-hover:text-white")} />
               {item.name}
+              {item.name === 'Enrollment' && (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+              )}
             </Link>
           );
         })}

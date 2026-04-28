@@ -24,7 +24,7 @@ export function EmployeeDashboard() {
         
         <div className="flex gap-4">
           <div className="glass border-white/5 p-4 flex items-center gap-3">
-             <div className="w-10 h-10 bg-emerald-500/10 flex items-center justify-center rounded-sm">
+             <div className="w-10 h-10 bg-emerald-500/10 flex items-center justify-center rounded">
                 <Activity className="w-5 h-5 text-emerald-400" />
              </div>
              <div>
@@ -33,7 +33,7 @@ export function EmployeeDashboard() {
              </div>
           </div>
           <div className="glass border-white/5 p-4 flex items-center gap-3">
-             <div className="w-10 h-10 bg-blue-500/10 flex items-center justify-center rounded-sm">
+             <div className="w-10 h-10 bg-blue-500/10 flex items-center justify-center rounded">
                 <ShieldCheck className="w-5 h-5 text-blue-400" />
              </div>
              <div>

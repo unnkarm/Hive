@@ -36,9 +36,9 @@ export function LoginPage() {
       {/* Dynamic Animated Background */}
       <div className="fixed inset-0 z-0">
         <Grainient
-          color1="#ee0c89"
-          color2="#000000"
-          color3="#e90028"
+          color1="#4a4a4a"
+          color2="#1a1a1a"
+          color3="#2d2d2d"
           timeSpeed={0.25}
           colorBalance={0}
           warpStrength={1}
@@ -75,7 +75,7 @@ export function LoginPage() {
             </div>
           </div>
 
-          <div className="flex p-1 bg-white/5 rounded-sm">
+          <div className="flex p-1 bg-white/5 rounded">
             <button 
               onClick={() => setSelectedRole('ADMIN')}
               className={cn(
