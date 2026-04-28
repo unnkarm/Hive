@@ -2,11 +2,11 @@
 @import "tailwindcss";
 
 :root {
-  /* Unified Brand Accents - New Cyan Identity */
+  /* Unified Brand Accents - Grey Identity */
   --hive-success: #10B981;
   --hive-warning: #F59E0B;
   --hive-error: #EF4444;
-  --hive-brand: #06B6D4; /* Hive Cyan */
+  --hive-brand: #94A3B8; /* Slate 400 */
 
   /* Dark Theme Tokens (Default) */
   --hive-black: #000000;
@@ -33,7 +33,7 @@
   --hive-dark: #FFFFFF;
   --hive-gray: #E2E8F0;
   --hive-border: rgba(0, 0, 0, 0.06);
-  --hive-accent: #0891B2; /* High-contrast Cyan */
+  --hive-accent: #475569; /* Slate 600 */
   --hive-text: #0F172A; /* Slate 900 for premium readability */
   --hive-text-90: rgba(15, 23, 42, 0.95);
   --hive-text-60: rgba(15, 23, 42, 0.7);
