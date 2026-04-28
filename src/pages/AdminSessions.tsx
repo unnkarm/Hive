@@ -4,9 +4,11 @@ import { Clock, MapPin, Hash, BarChartHorizontal, Calendar, Timer } from 'lucide
 import { cn } from '../lib/utils';
 import { useState } from 'react';
 import { EmployeeAnalyticsDashboard } from '../components/EmployeeAnalyticsDashboard';
+import { useAuth } from '../lib/AuthContext';
 
 export function AdminSessions() {
   const { sessions } = useAppSimulator();
+  const { theme } = useAuth();
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
 
   // Generate timestamp-based session data
@@ -22,11 +24,13 @@ export function AdminSessions() {
     };
   };
 
+  const isLight = theme === 'light';
+
   return (
     <div className="p-8 space-y-8 max-w-7xl">
       <header className="mb-8">
-        <h1 className="text-4xl font-extrabold uppercase tracking-tighter">Employee Sessions</h1>
-        <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em]">Employee Session Correlation with Timestamps</p>
+        <h1 className="text-4xl font-extrabold uppercase tracking-tighter text-hive-text">Employee Sessions</h1>
+        <p className="text-hive-text-40 text-[10px] uppercase font-bold tracking-[0.2em]">Employee Session Correlation with Timestamps</p>
       </header>
 
       <div className="space-y-4">
@@ -38,9 +42,9 @@ export function AdminSessions() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="glass border-white/5 p-6 hover:border-white/20 transition-all group overflow-hidden relative rounded-lg"
+              className="glass p-6 group overflow-hidden relative rounded-lg"
             >
-              <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity text-hive-text">
                 <Hash className="w-32 h-32" />
               </div>
 
@@ -50,31 +54,31 @@ export function AdminSessions() {
               >
                 {/* Identity & Basic Info */}
                 <div className="w-full lg:w-56 space-y-2">
-                  <div className="text-lg font-extrabold tracking-tighter flex items-center gap-2">
-                    <span className="text-white/20 font-light">#</span>{session.id}
+                  <div className="text-lg font-extrabold tracking-tighter flex items-center gap-2 text-hive-text">
+                    <span className="text-hive-text-20 font-light">#</span>{session.id}
                   </div>
-                  <div className="text-sm font-bold mt-2 group-hover/card:text-white transition-colors">
+                  <div className="text-sm font-bold mt-2 text-hive-text transition-colors">
                     {i % 2 === 0 ? 'Rahul Sharma' : 'Priya Patel'}
                   </div>
-                  <div className="text-[10px] text-white/50">
+                  <div className="text-[10px] text-hive-text-50">
                     {i % 2 === 0 ? '123 Worker Lane, City' : '456 Employee St, City'}
                   </div>
-                  <div className="text-[10px] text-white/50">
+                  <div className="text-[10px] text-hive-text-50">
                     Employee ID: EMP-{session.id}
                   </div>
                   
                   {/* Timestamp-based session info */}
-                  <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
-                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                  <div className="mt-3 pt-3 border-t border-hive-border space-y-2">
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-hive-text-40">
                       <Calendar className="w-3 h-3" /> {timestamp.date}
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-hive-text-40">
                       <Clock className="w-3 h-3" /> Start: {timestamp.startTime}
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-hive-text-40">
                       <Timer className="w-3 h-3" /> End: {timestamp.endTime}
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-hive-text-40">
                       <Clock className="w-3 h-3" /> Duration: {session.duration}
                     </div>
                   </div>
@@ -82,45 +86,45 @@ export function AdminSessions() {
 
                 {/* Zone Timeline */}
                 <div className="flex-1 w-full space-y-4">
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-white/30 flex items-center gap-2">
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-hive-text-30 flex items-center gap-2">
                     <MapPin className="w-3 h-3" /> Transit Timeline
                   </div>
                   <div className="flex items-center gap-2 relative">
                     {session.zonesVisited.map((zone, idx) => (
                       <div key={idx} className="flex items-center gap-2">
-                        <div className="px-3 py-1 bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-widest rounded">
+                        <div className="px-3 py-1 bg-hive-text-10 border border-hive-border text-[9px] font-bold uppercase tracking-widest rounded text-hive-text">
                           {zone}
                         </div>
                         {idx < session.zonesVisited.length - 1 && (
-                          <div className="w-4 h-[1px] bg-white/20" />
+                          <div className="w-4 h-[1px] bg-hive-border" />
                         )}
                       </div>
                     ))}
-                    <div className="flex-1 border-b border-dashed border-white/10" />
+                    <div className="flex-1 border-b border-dashed border-hive-border" />
                   </div>
                 </div>
 
                 {/* Activity Split */}
                 <div className="w-full lg:w-64 space-y-4">
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-white/30 flex items-center gap-2">
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-hive-text-30 flex items-center gap-2">
                     <BarChartHorizontal className="w-3 h-3" /> Activity Mix
                   </div>
-                  <div className="h-2 w-full flex bg-white/5 rounded overflow-hidden">
+                  <div className="h-2 w-full flex bg-hive-text-10 rounded overflow-hidden">
                     {session.activityDistribution.map((dist, idx) => (
                       <div 
                         key={idx}
                         style={{ width: `${dist.percentage}%` }}
                         className={cn(
-                          "h-full",
-                          dist.label === 'High' ? 'bg-white' : dist.label === 'Medium' ? 'bg-white/60' : 'bg-white/20'
+                          "h-full transition-all duration-500",
+                          dist.label === 'High' ? 'bg-hive-accent' : dist.label === 'Medium' ? 'bg-hive-text-60' : 'bg-hive-text-20'
                         )}
                         title={`${dist.label}: ${dist.percentage}%`}
                       />
                     ))}
                   </div>
-                  <div className="flex justify-between text-[8px] font-mono opacity-50 uppercase tracking-widest">
+                  <div className="flex justify-between text-[8px] font-mono opacity-50 uppercase tracking-widest text-hive-text">
                     {session.activityDistribution.map(d => (
-                      <span key={d.label}>{d.label}: {d.percentage}%</span>
+                      <span key={d.label} className="text-hive-text-40">{d.label}: {d.percentage}%</span>
                     ))}
                   </div>
                 </div>
@@ -128,10 +132,10 @@ export function AdminSessions() {
                 <button 
                   onClick={() => setExpandedSession(expandedSession === session.id ? null : session.id)}
                   className={cn(
-                    "px-6 py-3 border text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-lg relative overflow-hidden group",
+                    "px-6 py-3 border text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-lg relative overflow-hidden group shadow-lg",
                     expandedSession === session.id 
-                      ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]" 
-                      : "border-white/20 text-white hover:border-hive-success hover:text-hive-success shadow-lg"
+                      ? "bg-hive-accent text-hive-black border-hive-accent shadow-xl" 
+                      : "border-hive-border text-hive-text hover:border-hive-success hover:text-hive-success"
                   )}
                 >
                   <span className="relative z-10">{expandedSession === session.id ? 'Close Analytics' : '30-Day Analytics'}</span>
@@ -160,4 +164,3 @@ export function AdminSessions() {
     </div>
   );
 }
-

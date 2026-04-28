@@ -2,394 +2,221 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { motion } from 'motion/react';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
-import { Flame, Users, TrendingUp, AlertTriangle, Clock, MapPin } from 'lucide-react';
+import { Flame, Users, TrendingUp, AlertTriangle, Clock, MapPin, Zap, Activity } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
 
 import { EmployeeAnalyticsDashboard } from '../components/EmployeeAnalyticsDashboard';
 
-type ViewType = 'individual' | 'overall';
-
 export function AdminAnalytics() {
-  const [activeView, setActiveView] = useState<ViewType>('overall');
-  const [activeTab, setActiveTab] = useState<'zones' | 'productivity'>('zones');
+  const { theme } = useAuth();
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
-
-  // Zone-wise heat map data
-  const zoneHeatmapData = [
-    { zone: 'Zone A', x: 0, y: 0, intensity: 0.9 },
-    { zone: 'Zone A', x: 1, y: 0, intensity: 0.7 },
-    { zone: 'Zone A', x: 2, y: 0, intensity: 0.8 },
-    { zone: 'Zone A', x: 3, y: 0, intensity: 0.5 },
-    { zone: 'Zone B', x: 0, y: 1, intensity: 0.6 },
-    { zone: 'Zone B', x: 1, y: 1, intensity: 0.95 },
-    { zone: 'Zone B', x: 2, y: 1, intensity: 0.85 },
-    { zone: 'Zone B', x: 3, y: 1, intensity: 0.4 },
-    { zone: 'Zone C', x: 0, y: 2, intensity: 0.3 },
-    { zone: 'Zone C', x: 1, y: 2, intensity: 0.2 },
-    { zone: 'Zone C', x: 2, y: 2, intensity: 0.4 },
-    { zone: 'Zone C', x: 3, y: 2, intensity: 0.1 },
-    { zone: 'Zone D', x: 0, y: 3, intensity: 0.15 },
-    { zone: 'Zone D', x: 1, y: 3, intensity: 0.1 },
-    { zone: 'Zone D', x: 2, y: 3, intensity: 0.05 },
-    { zone: 'Zone D', x: 3, y: 3, intensity: 0.08 },
-  ];
+  const isLight = theme === 'light';
 
   // Productivity activities (Working, Eating, Discussing)
   const productivityData = [
-    { activity: 'Working', count: 45, color: '#10B981' },
-    { activity: 'Eating', count: 8, color: '#F59E0B' },
+    { activity: 'Working', count: 45, color: '#06B6D4' }, // Hive Cyan
+    { activity: 'Eating', count: 8, color: '#10B981' },
     { activity: 'Discussing', count: 12, color: '#3B82F6' },
   ];
 
-  // Non-productivity activities (Talking, Smoking, Loitering)
-  const nonProductivityData = [
-    { activity: 'Talking', count: 15, color: '#EF4444' },
-    { activity: 'Smoking', count: 5, color: '#8B5CF6' },
-    { activity: 'Loitering', count: 7, color: '#EC4899' },
-  ];
-
-  // Employee-specific data
+  // Employee-specific data with Zone info merged
   const employeeData = [
-    { name: 'Rahul Sharma', working: 6.5, eating: 1, discussing: 0.5, talking: 0.3, smoking: 0.1, loitering: 0.1 },
-    { name: 'Priya Patel', working: 7, eating: 0.8, discussing: 0.8, talking: 0.2, smoking: 0, loitering: 0.2 },
-    { name: 'Amit Singh', working: 5, eating: 1.2, discussing: 0.3, talking: 0.8, smoking: 0.4, loitering: 0.3 },
-    { name: 'Sneha Gupta', working: 6.8, eating: 0.9, discussing: 0.6, talking: 0.2, smoking: 0, loitering: 0.5 },
-    { name: 'Vikram Mehta', working: 5.5, eating: 1, discussing: 0.4, talking: 0.5, smoking: 0.3, loitering: 0.3 },
+    { name: 'Rahul Sharma', working: 6.5, eating: 1, discussing: 0.5, talking: 0.3, smoking: 0.1, loitering: 0.1, zone: 'Zone A', status: 'Working' },
+    { name: 'Priya Patel', working: 7, eating: 0.8, discussing: 0.8, talking: 0.2, smoking: 0, loitering: 0.2, zone: 'Zone B', status: 'Working' },
+    { name: 'Amit Singh', working: 5, eating: 1.2, discussing: 0.3, talking: 0.8, smoking: 0.4, loitering: 0.3, zone: 'Zone A', status: 'Break' },
+    { name: 'Sneha Gupta', working: 6.8, eating: 0.9, discussing: 0.6, talking: 0.2, smoking: 0, loitering: 0.5, zone: 'Zone C', status: 'Working' },
+    { name: 'Vikram Mehta', working: 5.5, eating: 1, discussing: 0.4, talking: 0.5, smoking: 0.3, loitering: 0.3, zone: 'Zone B', status: 'Meeting' },
   ];
 
   // Combined data for overall view
   const combinedProductivity = [
-    { name: 'Working', value: 45, color: '#10B981' },
-    { name: 'Eating', value: 8, color: '#F59E0B' },
+    { name: 'Working', value: 45, color: '#06B6D4' }, // Primary Hive Cyan
+    { name: 'Eating', value: 8, color: '#10B981' },
     { name: 'Discussing', value: 12, color: '#3B82F6' },
-    { name: 'Talking', value: 15, color: '#EF4444' },
-    { name: 'Smoking', value: 5, color: '#8B5CF6' },
-    { name: 'Loitering', value: 7, color: '#EC4899' },
+    { name: 'Talking', value: 15, color: '#8B5CF6' },
+    { name: 'Smoking', value: 5, color: '#EF4444' },
+    { name: 'Loitering', value: 7, color: '#64748B' },
   ];
 
-  const getHeatColor = (intensity: number) => {
-    if (intensity >= 0.8) return '#EF4444';
-    if (intensity >= 0.6) return '#F59E0B';
-    if (intensity >= 0.4) return '#10B981';
-    if (intensity >= 0.2) return '#3B82F6';
-    return '#1E3A5F';
-  };
+  const stats = [
+    { label: 'Avg Productivity', value: '88.4%', icon: Zap, color: 'text-hive-brand' },
+    { label: 'Zone Density', value: 'OPTIMAL', icon: MapPin, color: 'text-blue-500' },
+    { label: 'Active Alerts', value: '2', icon: AlertTriangle, color: 'text-hive-brand' },
+    { label: 'System Load', value: '14%', icon: Activity, color: 'text-hive-text-40' },
+  ];
 
   return (
-    <div className="p-8 space-y-8">
-      <header className="mb-8">
-        <h1 className="text-4xl font-extrabold uppercase tracking-tighter">Analytics</h1>
-        <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em]">Productivity and Zone Tracking with Heat Map</p>
+    <div className="p-8 space-y-8 max-w-7xl">
+      <header className="mb-12">
+        <h1 className="text-4xl font-extrabold uppercase tracking-tighter text-hive-text">Operational Analytics</h1>
+        <p className="text-hive-text-40 text-[10px] uppercase font-bold tracking-[0.2em]">High-fidelity productivity tracking and zone correlation</p>
       </header>
 
-      {/* View Toggle */}
-      <div className="flex gap-4 mb-6">
-        <button 
-          onClick={() => setActiveView('overall')}
-          className={cn(
-            "px-6 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all rounded",
-            activeView === 'overall' ? "bg-white text-black border-white" : "border-white/20 text-white hover:border-white"
-          )}
-        >
-          <Users className="w-3 h-3 inline mr-2" /> Overall All Employees
-        </button>
-        <button 
-          onClick={() => setActiveView('individual')}
-          className={cn(
-            "px-6 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all rounded",
-            activeView === 'individual' ? "bg-white text-black border-white" : "border-white/20 text-white hover:border-white"
-          )}
-        >
-          <TrendingUp className="w-3 h-3 inline mr-2" /> Individual Employee
-        </button>
-      </div>
+      {!selectedEmployee ? (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {stats.map((stat, i) => (
+              <div key={i} className="bg-hive-text-10 border border-hive-border p-6 rounded-lg glass">
+                <div className="flex items-center gap-2 mb-2 text-hive-text-40">
+                  <stat.icon className="w-3 h-3" />
+                  <span className="text-[9px] font-bold uppercase tracking-widest">{stat.label}</span>
+                </div>
+                <div className={cn("text-2xl font-black tracking-tighter", stat.color)}>{stat.value}</div>
+              </div>
+            ))}
+          </div>
 
-      {/* Tab Toggle */}
-      <div className="flex gap-4 mb-6">
-        <button 
-          onClick={() => setActiveTab('zones')}
-          className={cn(
-            "px-6 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all rounded",
-            activeTab === 'zones' ? "bg-white text-black border-white" : "border-white/20 text-white hover:border-white"
-          )}
-        >
-          <MapPin className="w-3 h-3 inline mr-2" /> Zone Heat Map
-        </button>
-        <button 
-          onClick={() => setActiveTab('productivity')}
-          className={cn(
-            "px-6 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all rounded",
-            activeTab === 'productivity' ? "bg-white text-black border-white" : "border-white/20 text-white hover:border-white"
-          )}
-        >
-          <Flame className="w-3 h-3 inline mr-2" /> Productivity Breakdown
-        </button>
-      </div>
-
-      {activeTab === 'zones' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Zone Heat Map */}
-          <div className="glass p-6 border-white/5 rounded-lg">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white/50 mb-6 flex items-center gap-2">
-              <Flame className="w-4 h-4" /> Zone-Wise Working Tracker (Heat Map)
-            </h3>
-            
-            {/* Heat Map Grid */}
-            <div className="relative overflow-hidden p-4 bg-black/40 rounded-lg border border-white/5">
-              {/* Scanning Animation */}
-              <motion.div 
-                animate={{ top: ['0%', '100%', '0%'] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                className="absolute left-0 right-0 h-[2px] bg-hive-success/40 blur-[2px] z-20 pointer-events-none"
-              />
-              
-              <div className="grid grid-cols-4 gap-4 relative z-10">
-                {zoneHeatmapData.map((cell, i) => {
-                  const color = getHeatColor(cell.intensity);
-                  return (
-                    <motion.div
-                      key={i}
-                      whileHover={{ scale: 1.05, zIndex: 30 }}
-                      className="aspect-square rounded-lg flex flex-col items-center justify-center relative overflow-hidden border border-white/10 glass transition-all"
-                      style={{ 
-                        backgroundColor: `${color}15`,
-                        boxShadow: cell.intensity > 0.6 ? `inset 0 0 20px ${color}20, 0 0 10px ${color}10` : 'none',
-                        borderColor: `${color}30`
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            {/* Overall Distribution */}
+            <div className="lg:col-span-2 glass p-8 rounded-lg space-y-6">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-hive-text-50 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-hive-brand" /> Global Activity Breakdown
+              </h3>
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={combinedProductivity}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "rgba(15, 23, 42, 0.05)" : "rgba(255, 255, 255, 0.05)"} vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: isLight ? 'rgba(15, 23, 42, 0.4)' : 'rgba(255, 255, 255, 0.4)', fontSize: 10, fontWeight: 'bold' }} 
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: isLight ? 'rgba(15, 23, 42, 0.4)' : 'rgba(255, 255, 255, 0.4)', fontSize: 10, fontWeight: 'bold' }} 
+                    />
+                    <Tooltip 
+                      cursor={{ fill: isLight ? 'rgba(15, 23, 42, 0.02)' : 'rgba(255, 255, 255, 0.02)' }}
+                      contentStyle={{ 
+                        backgroundColor: isLight ? '#FFFFFF' : '#0A0A0A', 
+                        borderRadius: '12px',
+                        border: `1px solid ${isLight ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255, 255, 255, 0.08)'}`, 
+                        fontSize: '10px', 
+                        fontWeight: 'bold',
+                        color: isLight ? '#0F172A' : '#FFFFFF',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                       }}
-                      title={`${cell.zone} - ${Math.round(cell.intensity * 100)}% activity`}
-                    >
-                      <div className="absolute inset-0 opacity-20" style={{ background: `radial-gradient(circle at center, ${color}, transparent)` }} />
-                      <span className="text-[9px] font-black uppercase text-white/40 tracking-widest relative z-10">{cell.zone.replace('Zone ', '')}</span>
-                      <span className="text-[12px] font-black font-mono text-white relative z-10">{Math.round(cell.intensity * 100)}%</span>
-                      
-                      {/* Intensity Bar */}
-                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5">
-                        <div className="h-full transition-all duration-1000" style={{ width: `${cell.intensity * 100}%`, backgroundColor: color }} />
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                    />
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                      {combinedProductivity.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
-            <div className="mt-6 flex justify-between text-[8px] font-bold uppercase tracking-[0.2em]">
-              <span className="text-blue-400">Low Activity</span>
-              <span className="text-green-400">Medium</span>
-              <span className="text-amber-400">High</span>
-              <span className="text-red-400">Very High</span>
-            </div>
-          </div>
-
-          {/* Zone Employee Count */}
-          <div className="glass p-6 border-white/5 rounded-lg">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white/50 mb-6 flex items-center gap-2">
-              <Users className="w-4 h-4" /> Active Employees by Zone
-            </h3>
-            <div className="flex flex-col gap-4">
-              {['Zone A', 'Zone B', 'Zone C', 'Zone D'].map((zone, idx) => (
-                <div key={zone} className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getHeatColor([0.9, 0.7, 0.3, 0.1][idx]) }} />
-                    <span className="font-bold">{zone}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-hive-success">{Math.floor(Math.random() * 15) + 5} Active</span>
-                    <span className="text-white/30">|</span>
-                    <span className="text-white/60">{Math.floor(Math.random() * 10) + 2} Working</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'productivity' && (
-        <div className="space-y-8">
-          {activeView === 'overall' ? (
-            <>
-              {/* Overall Productivity vs Non-Productivity */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Productivity Activities */}
-                <div className="glass p-6 border-white/5 rounded-lg">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-hive-success mb-6 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" /> Productivity Activities
-                  </h3>
-                  <div className="h-[250px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={productivityData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#262626" horizontal={false} />
-                        <XAxis type="number" stroke="#525252" fontSize={10} tickLine={false} axisLine={false} />
-                        <YAxis dataKey="activity" type="category" stroke="#525252" fontSize={10} tickLine={false} axisLine={false} width={80} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: '#0A0A0A', border: '1px solid #262626', fontSize: '10px' }} 
-                          itemStyle={{ color: '#FFF' }}
-                        />
-                        <Bar dataKey="count" fill="#10B981" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="mt-4 grid grid-cols-3 gap-2">
-                    {productivityData.map(item => (
-                      <div key={item.activity} className="bg-white/5 p-2 rounded text-center">
-                        <div className="text-lg font-bold" style={{ color: item.color }}>{item.count}</div>
-                        <div className="text-[8px] uppercase opacity-50">{item.activity}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Non-Productivity Activities */}
-                <div className="glass p-6 border-white/5 rounded-lg">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-hive-error mb-6 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4" /> Non-Productivity Activities
-                  </h3>
-                  <div className="h-[250px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={nonProductivityData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#262626" horizontal={false} />
-                        <XAxis type="number" stroke="#525252" fontSize={10} tickLine={false} axisLine={false} />
-                        <YAxis dataKey="activity" type="category" stroke="#525252" fontSize={10} tickLine={false} axisLine={false} width={80} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: '#0A0A0A', border: '1px solid #262626', fontSize: '10px' }} 
-                          itemStyle={{ color: '#FFF' }}
-                        />
-                        <Bar dataKey="count" fill="#EF4444" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="mt-4 grid grid-cols-3 gap-2">
-                    {nonProductivityData.map(item => (
-                      <div key={item.activity} className="bg-white/5 p-2 rounded text-center">
-                        <div className="text-lg font-bold" style={{ color: item.color }}>{item.count}</div>
-                        <div className="text-[8px] uppercase opacity-50">{item.activity}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Combined Pie Chart */}
-              <div className="glass p-6 border-white/5 rounded-lg">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-white/50 mb-6">Overall Overview - Activity Distribution</h3>
-                <div className="h-[300px] w-full flex items-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={combinedProductivity}
-                        cx="40%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={4}
-                        dataKey="value"
-                      >
-                        {combinedProductivity.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#0A0A0A', border: '1px solid #262626', fontSize: '10px' }}
-                      />
-                      <Legend 
-                        verticalAlign="middle" 
-                        align="right" 
-                        layout="vertical"
-                        iconType="circle"
-                        formatter={(value) => <span className="text-[10px] font-bold uppercase text-white/80">{value}</span>}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </>
-          ) : (
-            /* Individual Employee View */
-            <div className="space-y-8">
-              {!selectedEmployee ? (
-                <div className="glass p-6 border-white/5 rounded-lg">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-white/50 mb-6">Select Employee for Deep Dive</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-white/10">
-                          <th className="text-left p-3 text-[10px] font-bold uppercase tracking-widest text-white/50">Employee</th>
-                          <th className="text-center p-3 text-[10px] font-bold uppercase tracking-widest text-hive-success">Working (h)</th>
-                          <th className="text-center p-3 text-[10px] font-bold uppercase tracking-widest text-amber-400">Eating (h)</th>
-                          <th className="text-center p-3 text-[10px] font-bold uppercase tracking-widest text-blue-400">Discussing (h)</th>
-                          <th className="text-center p-3 text-[10px] font-bold uppercase tracking-widest text-red-400">Talking (h)</th>
-                          <th className="text-center p-3 text-[10px] font-bold uppercase tracking-widest text-white/50">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {employeeData.map((emp, idx) => (
-                          <tr key={idx} className="border-b border-white/5 hover:bg-white/5 group">
-                            <td className="p-3 text-sm font-bold">{emp.name}</td>
-                            <td className="p-3 text-center font-mono text-hive-success">{emp.working}</td>
-                            <td className="p-3 text-center font-mono text-amber-400">{emp.eating}</td>
-                            <td className="p-3 text-center font-mono text-blue-400">{emp.discussing}</td>
-                            <td className="p-3 text-center font-mono text-red-400">{emp.talking}</td>
-                            <td className="p-3 text-center">
-                              <button 
-                                onClick={() => setSelectedEmployee(emp.name)}
-                                className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-white text-black rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                View Detailed Dashboard
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between bg-white/5 p-4 rounded-lg border border-white/10">
-                    <div className="flex items-center gap-4">
-                       <div className="w-10 h-10 rounded-full bg-hive-success/20 flex items-center justify-center border border-hive-success/30">
-                          <Users className="w-5 h-5 text-hive-success" />
-                       </div>
-                       <div>
-                         <h2 className="text-xl font-black uppercase tracking-tighter">{selectedEmployee}</h2>
-                         <p className="text-[9px] font-bold uppercase text-white/40 tracking-widest">Active Analytics Session</p>
-                       </div>
+            {/* Quick Metrics */}
+            <div className="glass p-8 rounded-lg space-y-8">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-hive-text-50">Efficiency Index</h3>
+              <div className="space-y-6">
+                {[
+                  { label: 'Work Focus', val: 92 },
+                  { label: 'Collab Depth', val: 78 },
+                  { label: 'Zone Stability', val: 85 }
+                ].map((m, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                      <span className="text-hive-text-60">{m.label}</span>
+                      <span className="text-hive-text">{m.val}%</span>
                     </div>
-                    <button 
-                      onClick={() => setSelectedEmployee(null)}
-                      className="text-[10px] font-black uppercase tracking-widest px-4 py-2 border border-white/20 hover:bg-white hover:text-black transition-all rounded"
-                    >
-                      Back to List
-                    </button>
+                    <div className="h-1.5 bg-hive-text-10 rounded-full overflow-hidden">
+                       <motion.div 
+                         initial={{ width: 0 }}
+                         animate={{ width: `${m.val}%` }}
+                         className={cn(
+                           "h-full shadow-[0_0_10px_rgba(6,182,212,0.2)] bg-hive-brand"
+                         )}
+                       />
+                    </div>
                   </div>
-                  <EmployeeAnalyticsDashboard employeeId="1" name={selectedEmployee} />
-                </div>
-              )}
-              
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
-                <div className="bg-hive-success/10 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-hive-success">32.8h</div>
-                  <div className="text-[8px] uppercase text-white/50">Total Working</div>
-                </div>
-                <div className="bg-amber-500/10 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-amber-400">4.9h</div>
-                  <div className="text-[8px] uppercase text-white/50">Total Eating</div>
-                </div>
-                <div className="bg-blue-500/10 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-blue-400">2.6h</div>
-                  <div className="text-[8px] uppercase text-white/50">Total Discussing</div>
-                </div>
-                <div className="bg-red-500/10 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-red-400">2.0h</div>
-                  <div className="text-[8px] uppercase text-white/50">Total Talking</div>
-                </div>
-                <div className="bg-pink-500/10 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-pink-400">1.4h</div>
-                  <div className="text-[8px] uppercase text-white/50">Total Non-Productive</div>
-                </div>
+                ))}
+              </div>
+              <div className="pt-6 border-t border-hive-border">
+                 <div className="p-4 bg-hive-brand/10 border border-hive-brand/20 rounded-lg">
+                    <div className="text-[10px] font-bold text-hive-accent uppercase tracking-widest mb-1">Recommendation</div>
+                    <p className="text-[9px] text-hive-text-50 leading-relaxed uppercase">
+                      Individual focus is high. Zone B capacity can be optimized by 12%.
+                    </p>
+                 </div>
               </div>
             </div>
-          )}
+          </div>
+
+          {/* Combined Productivity & Zone Table */}
+          <div className="glass p-8 rounded-lg">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-hive-text-50 mb-8 flex items-center gap-2">
+              <Users className="w-4 h-4 text-hive-brand" /> Personnel Productivity Intel
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-hive-border">
+                    <th className="text-left pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-hive-text-30 px-4">Employee</th>
+                    <th className="text-left pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-hive-text-30 px-4">Active Zone</th>
+                    <th className="text-center pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-hive-brand px-4">Working (h)</th>
+                    <th className="text-center pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-hive-text-30 px-4">Non-Prod (h)</th>
+                    <th className="text-center pb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-hive-text-30 px-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-hive-border">
+                  {employeeData.map((emp, idx) => (
+                    <tr key={idx} className="group hover:bg-hive-text-10 transition-colors">
+                      <td className="py-4 px-4">
+                        <div className="text-sm font-black text-hive-text-90">{emp.name}</div>
+                        <div className="text-[8px] font-bold uppercase text-hive-text-30 tracking-widest">{emp.status}</div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="px-2 py-1 bg-hive-text-10 border border-hive-border rounded text-[9px] font-bold text-hive-text-60">
+                          {emp.zone}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <div className="text-sm font-mono font-bold text-hive-brand">{emp.working}h</div>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <div className="text-sm font-mono font-bold text-hive-text-20">
+                          {(emp.talking + emp.smoking + emp.loitering).toFixed(1)}h
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <button 
+                          onClick={() => setSelectedEmployee(emp.name)}
+                          className="text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 bg-hive-accent text-hive-black rounded hover:bg-hive-success transition-all opacity-0 group-hover:opacity-100 shadow-md"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between glass p-6 rounded-lg">
+            <div className="flex items-center gap-6">
+               <div className="w-12 h-12 rounded-lg bg-hive-brand/20 flex items-center justify-center border border-hive-brand/30">
+                  <Users className="w-6 h-6 text-hive-brand" />
+               </div>
+               <div>
+                 <h2 className="text-2xl font-black uppercase tracking-tighter text-hive-text">{selectedEmployee}</h2>
+                 <p className="text-[10px] font-bold uppercase text-hive-text-40 tracking-widest">30-Day Intelligence Deep Dive</p>
+               </div>
+            </div>
+            <button 
+              onClick={() => setSelectedEmployee(null)}
+              className="text-[10px] font-black uppercase tracking-widest px-6 py-3 border border-hive-border hover:border-hive-brand hover:text-hive-brand transition-all rounded shadow-sm text-hive-text"
+            >
+              Back to Overview
+            </button>
+          </div>
+          <EmployeeAnalyticsDashboard employeeId="1" name={selectedEmployee} />
         </div>
       )}
     </div>

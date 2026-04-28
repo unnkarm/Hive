@@ -33,7 +33,7 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#120f17] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Dynamic Animated Background */}
+      {/* Dynamic Animated Background - Forced Dark */}
       <div className="fixed inset-0 z-0">
         <Grainient
           color1="#4a4a4a"
@@ -70,7 +70,7 @@ export function LoginPage() {
           <div className="flex flex-col items-center gap-4 text-center">
             <Logo className="w-12 h-12 text-white" />
             <div>
-              <h1 className="text-2xl font-black uppercase tracking-tighter">Secure Access</h1>
+              <h1 className="text-2xl font-black uppercase tracking-tighter text-white">Secure Access</h1>
               <p className="text-[10px] text-white/40 uppercase font-bold tracking-[0.2em]">ProductHive Intelligence Portal</p>
             </div>
           </div>
@@ -117,7 +117,7 @@ export function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={selectedRole === 'ADMIN' ? 'admin@producthive.ai' : 'employee@producthive.ai'}
-                    className="w-full bg-white/5 border border-white/10 p-4 pl-12 text-sm focus:outline-none focus:border-white/40 transition-colors"
+                    className="w-full bg-white/5 border border-white/10 p-4 pl-12 text-sm focus:outline-none focus:border-white/40 transition-colors text-white"
                   />
                 </div>
               </div>
@@ -130,7 +130,7 @@ export function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-white/5 border border-white/10 p-4 pl-12 pr-12 text-sm focus:outline-none focus:border-white/40 transition-colors"
+                    className="w-full bg-white/5 border border-white/10 p-4 pl-12 pr-12 text-sm focus:outline-none focus:border-white/40 transition-colors text-white"
                   />
                   <button
                     type="button"
@@ -145,7 +145,7 @@ export function LoginPage() {
 
             <button 
               type="submit"
-              className="w-full py-4 bg-white text-black font-black uppercase tracking-[0.2em] hover:bg-white/90 transition-all flex items-center justify-center gap-2 group"
+              className="w-full py-4 bg-white text-black font-black uppercase tracking-[0.2em] hover:bg-white/90 transition-all flex items-center justify-center gap-2 group shadow-xl"
             >
               Initialize Session <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>

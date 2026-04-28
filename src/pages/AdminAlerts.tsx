@@ -2,20 +2,24 @@ import { useAppSimulator } from '../hooks';
 import { AlertTriangle, Clock, MapPin, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuth } from '../lib/AuthContext';
 
 export function AdminAlerts() {
   const { alerts, setAlerts } = useAppSimulator();
+  const { theme } = useAuth();
 
   const resolveAlert = (id: string) => {
     setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'Resolved' } : a));
   };
 
+  const isLight = theme === 'light';
+
   return (
     <div className="p-8 space-y-8 max-w-7xl">
       <header className="flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-extrabold uppercase tracking-tighter">Signal Breaches</h1>
-          <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em]">Active & Resolved Anomalies</p>
+          <h1 className="text-4xl font-extrabold uppercase tracking-tighter text-hive-text">Signal Breaches</h1>
+          <p className="text-hive-text-40 text-[10px] uppercase font-bold tracking-[0.2em]">Active & Resolved Anomalies</p>
         </div>
       </header>
 
@@ -29,31 +33,31 @@ export function AdminAlerts() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className={cn(
-                "glass border-l-4 p-6 transition-all",
+                "glass border-l-4 p-6 transition-all rounded-lg",
                 alert.status === 'Resolved' 
-                  ? "border-l-white/10 opacity-60" 
+                  ? "border-l-hive-text-10 opacity-60" 
                   : alert.severity === 'High' ? "border-l-hive-error" : "border-l-hive-warning"
               )}
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-start gap-4">
                   <div className={cn(
-                    "w-12 h-12 flex items-center justify-center",
-                    alert.status === 'Resolved' ? "bg-white/5" : "bg-white/10"
+                    "w-12 h-12 flex items-center justify-center rounded",
+                    alert.status === 'Resolved' ? "bg-hive-text-5" : "bg-hive-text-10"
                   )}>
                     {alert.severity === 'High' ? <ShieldAlert className="w-6 h-6 text-hive-error" /> : <AlertTriangle className="w-6 h-6 text-hive-warning" />}
                   </div>
                   <div>
                     <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-lg font-bold tracking-tight uppercase">{alert.type}</h3>
+                      <h3 className="text-lg font-bold tracking-tight uppercase text-hive-text">{alert.type}</h3>
                       <span className={cn(
-                        "text-[9px] px-2 py-0.5 font-bold uppercase tracking-widest",
-                        alert.severity === 'High' ? "bg-hive-error text-white" : "bg-hive-warning text-black"
+                        "text-[9px] px-2 py-0.5 font-bold uppercase tracking-widest rounded",
+                        alert.severity === 'High' ? "bg-hive-error text-white" : "bg-hive-warning text-hive-black"
                       )}>
                         {alert.severity} Priority
                       </span>
                     </div>
-                    <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                    <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest text-hive-text-40">
                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {alert.zone}</span>
                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {alert.timestamp}</span>
                     </div>
@@ -64,7 +68,7 @@ export function AdminAlerts() {
                   {alert.status === 'Active' ? (
                     <button 
                       onClick={() => resolveAlert(alert.id)}
-                      className="px-6 py-2 bg-white text-black text-[10px] font-extrabold uppercase tracking-widest hover:invert transition-all flex items-center gap-2"
+                      className="px-6 py-2 bg-hive-accent text-hive-black text-[10px] font-extrabold uppercase tracking-widest hover:bg-hive-success transition-all flex items-center gap-2 rounded shadow-sm"
                     >
                       <CheckCircle2 className="w-3 h-3" /> Mark Resolved
                     </button>
