@@ -1,0 +1,22 @@
+###############################################
+# MediaMTX configuration — fast HLS startup
+###############################################
+
+# RTSP server
+rtspAddress: :8554
+
+# HLS server
+hlsAddress: :8888
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 500ms
+hlsPartDuration: 100ms
+hlsSegmentMaxSize: 50M
+hlsAllowOrigins: ['*']
+
+# WebRTC (keep enabled for future use)
+webrtcAddress: :8889
+
+# Paths — accept any stream name
+paths:
+  all:

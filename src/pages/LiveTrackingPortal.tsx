@@ -89,18 +89,13 @@ export function LiveTrackingPortal({ mode = 'all' }: Props) {
                {mode === 'person' ? 'Optical Tracking: Rahul Sharma' : mode === 'zone' ? 'Zone Analysis: WORKSTATION_A' : 'Master Multi-Stream'}
             </h2>
             
-            {/* The Image */}
-            <div className="absolute inset-0 grayscale brightness-50 group-hover:brightness-75 transition-all duration-700">
-              <img 
-                src={mode === 'person' 
-                  ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop"
-                  : mode === 'zone'
-                  ? "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=800&auto=format&fit=crop"
-                  : "https://picsum.photos/seed/tracking/1200/800?grayscale"
-                }
-                className="w-full h-full object-cover"
-                alt="Tracking View"
-                referrerPolicy="no-referrer"
+            {/* The Stream */}
+            <div className="absolute inset-0 grayscale brightness-50 group-hover:brightness-75 transition-all duration-700 pointer-events-auto">
+              <iframe 
+                src="http://localhost:8889/camera_node_3/"
+                className="w-full h-full border-none object-cover pointer-events-none"
+                allow="autoplay; fullscreen"
+                title="Live Tracking Stream"
               />
             </div>
 

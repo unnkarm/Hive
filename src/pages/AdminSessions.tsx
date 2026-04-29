@@ -2,27 +2,53 @@ import { motion } from 'motion/react';
 import { useAppSimulator } from '../hooks';
 import { Clock, MapPin, Hash, BarChartHorizontal, Calendar, Timer } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EmployeeAnalyticsDashboard } from '../components/EmployeeAnalyticsDashboard';
 import { useAuth } from '../lib/AuthContext';
 
 export function AdminSessions() {
-  const { sessions } = useAppSimulator();
   const { theme } = useAuth();
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
+  const [realSessions, setRealSessions] = useState<any[]>([]);
 
-  // Generate timestamp-based session data
-  const getSessionTimestamp = (sessionId: string, index: number) => {
-    const baseDate = new Date();
-    baseDate.setHours(8, 15 + index * 15, 0);
-    return {
-      startTimestamp: baseDate.toISOString(),
-      endTimestamp: new Date(baseDate.getTime() + (45 + index * 15) * 60000).toISOString(),
-      date: baseDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-      startTime: baseDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      endTime: new Date(baseDate.getTime() + (45 + index * 15) * 60000).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-    };
-  };
+  useEffect(() => {
+    fetch('http://localhost:3000/api/activities/summary')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.summary) return;
+        
+        const grouped = data.summary.reduce((acc: any, curr: any) => {
+          if (!acc[curr.name]) acc[curr.name] = { id: curr.person_id, name: curr.name, totalSec: 0, activities: [] };
+          acc[curr.name].totalSec += curr.total_seconds;
+          acc[curr.name].activities.push(curr);
+          return acc;
+        }, {});
+
+        const mapped = Object.values(grouped).map((p: any) => {
+          const dist = p.activities.map((a: any) => ({
+            label: a.action,
+            percentage: Math.round((a.total_seconds / p.totalSec) * 100)
+          }));
+          
+          const hrs = Math.floor(p.totalSec / 3600);
+          const mins = Math.floor((p.totalSec % 3600) / 60);
+          const duration = `${hrs}h ${mins}m`;
+
+          return {
+            id: p.id,
+            name: p.name,
+            startTime: 'NA',
+            endTime: 'NA',
+            date: 'NA',
+            duration: duration,
+            zonesVisited: ['NA'],
+            activityDistribution: dist
+          };
+        });
+        setRealSessions(mapped);
+      })
+      .catch(err => console.error(err));
+  }, []);
 
   const isLight = theme === 'light';
 
@@ -34,8 +60,7 @@ export function AdminSessions() {
       </header>
 
       <div className="space-y-4">
-        {sessions.map((session, i) => {
-          const timestamp = getSessionTimestamp(session.id, i);
+        {realSessions.map((session, i) => {
           return (
             <motion.div 
               key={session.id}
@@ -58,25 +83,25 @@ export function AdminSessions() {
                     <span className="text-hive-text-20 font-light">#</span>{session.id}
                   </div>
                   <div className="text-sm font-bold mt-2 text-hive-text transition-colors">
-                    {i % 2 === 0 ? 'Rahul Sharma' : 'Priya Patel'}
+                    {session.name}
                   </div>
                   <div className="text-[10px] text-hive-text-50">
-                    {i % 2 === 0 ? '123 Worker Lane, City' : '456 Employee St, City'}
+                    NA
                   </div>
                   <div className="text-[10px] text-hive-text-50">
-                    Employee ID: EMP-{session.id}
+                    Employee ID: {session.id}
                   </div>
                   
                   {/* Timestamp-based session info */}
                   <div className="mt-3 pt-3 border-t border-hive-border space-y-2">
                     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-hive-text-40">
-                      <Calendar className="w-3 h-3" /> {timestamp.date}
+                      <Calendar className="w-3 h-3" /> {session.date}
                     </div>
                     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-hive-text-40">
-                      <Clock className="w-3 h-3" /> Start: {timestamp.startTime}
+                      <Clock className="w-3 h-3" /> Start: {session.startTime}
                     </div>
                     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-hive-text-40">
-                      <Timer className="w-3 h-3" /> End: {timestamp.endTime}
+                      <Timer className="w-3 h-3" /> End: {session.endTime}
                     </div>
                     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-hive-text-40">
                       <Clock className="w-3 h-3" /> Duration: {session.duration}
@@ -90,7 +115,7 @@ export function AdminSessions() {
                     <MapPin className="w-3 h-3" /> Transit Timeline
                   </div>
                   <div className="flex items-center gap-2 relative">
-                    {session.zonesVisited.map((zone, idx) => (
+                    {session.zonesVisited.map((zone: string, idx: number) => (
                       <div key={idx} className="flex items-center gap-2">
                         <div className="px-3 py-1 bg-hive-text-10 border border-hive-border text-[9px] font-bold uppercase tracking-widest rounded text-hive-text">
                           {zone}
@@ -110,20 +135,20 @@ export function AdminSessions() {
                     <BarChartHorizontal className="w-3 h-3" /> Activity Mix
                   </div>
                   <div className="h-2 w-full flex bg-hive-text-10 rounded overflow-hidden">
-                    {session.activityDistribution.map((dist, idx) => (
+                    {session.activityDistribution.map((dist: any, idx: number) => (
                       <div 
                         key={idx}
                         style={{ width: `${dist.percentage}%` }}
                         className={cn(
                           "h-full transition-all duration-500",
-                          dist.label === 'High' ? 'bg-hive-accent' : dist.label === 'Medium' ? 'bg-hive-text-60' : 'bg-hive-text-20'
+                          dist.label === 'talking' ? 'bg-hive-accent' : dist.label.includes('working') ? 'bg-hive-text-60' : 'bg-hive-text-20'
                         )}
                         title={`${dist.label}: ${dist.percentage}%`}
                       />
                     ))}
                   </div>
-                  <div className="flex justify-between text-[8px] font-mono opacity-50 uppercase tracking-widest text-hive-text">
-                    {session.activityDistribution.map(d => (
+                  <div className="flex justify-between text-[8px] font-mono opacity-50 uppercase tracking-widest text-hive-text mt-2 flex-wrap gap-2">
+                    {session.activityDistribution.map((d: any) => (
                       <span key={d.label} className="text-hive-text-40">{d.label}: {d.percentage}%</span>
                     ))}
                   </div>
@@ -154,7 +179,7 @@ export function AdminSessions() {
               {expandedSession === session.id && (
                 <EmployeeAnalyticsDashboard 
                   employeeId={session.id} 
-                  name={i % 2 === 0 ? 'Rahul Sharma' : 'Priya Patel'} 
+                  name={session.name} 
                 />
               )}
             </motion.div>

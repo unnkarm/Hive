@@ -1,0 +1,78 @@
+# Python Virtual Environments
+venv/
+env/
+ENV/
+.venv
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Node credentials
+.node_credentials*.json
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# React build
+frontend-dashboard/build/
+frontend-dashboard/.env.local
+frontend-dashboard/.env.development.local
+frontend-dashboard/.env.test.local
+frontend-dashboard/.env.production.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Cache
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Video files (for testing)
+*.mp4
+*.avi
+*.mov
+*.webm
+
+# ML model artifacts
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# Local archives
+camera-node.zip

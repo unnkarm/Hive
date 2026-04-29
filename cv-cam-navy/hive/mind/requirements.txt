@@ -1,0 +1,10 @@
+Flask==3.0.0
+Flask-CORS==4.0.0
+pymongo
+python-dotenv==1.0.0
+ultralytics
+opencv-python
+numpy
+Pillow
+torchreid
+onnxruntime-gpu

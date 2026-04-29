@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useAppSimulator } from '../hooks';
 import { Camera, Signal, Activity, Info, MoreVertical, Target, Clock, User, Calendar, Eye } from 'lucide-react';
@@ -42,11 +42,16 @@ export function AdminCameras() {
       </header>
 
       {activeTab === 'general' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {cameras.map((cam) => (
-            <CameraTile key={cam.id} camera={cam} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {cameras.map((cam) => (
+              <CameraTile key={cam.id} camera={cam} />
+            ))}
+          </div>
+          <div className="mt-8">
+            <RealtimeActivityLog />
+          </div>
+        </>
       ) : activeTab === 'live' ? (
         <div className="flex flex-col gap-6">
           {/* Live Tracking Sub-Options */}
@@ -237,11 +242,20 @@ function CameraTile({ camera }: any) {
     >
       <div className="aspect-video relative overflow-hidden bg-black">
         {isOnline ? (
-          <img 
-            src={`https://picsum.photos/seed/${camera.id}/600/400?grayscale`} 
-            className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-[3s]" 
-            referrerPolicy="no-referrer"
-          />
+          camera.id === '1' ? (
+            <iframe 
+              src="http://localhost:8889/camera_node_3/"
+              className="w-full h-full border-none opacity-80 group-hover:scale-110 transition-transform duration-[3s]" 
+              allow="autoplay; fullscreen"
+              title={`Camera Stream ${camera.name}`}
+            />
+          ) : (
+            <img 
+              src={`https://picsum.photos/seed/${camera.id}/600/400?grayscale`} 
+              className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-[3s]" 
+              referrerPolicy="no-referrer"
+            />
+          )
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center opacity-20 text-hive-text">
             <Signal className="w-8 h-8 mb-2" />
@@ -276,10 +290,81 @@ function CameraTile({ camera }: any) {
           <span className="flex items-center gap-1 text-hive-text-40"><Signal className="w-3 h-3" /> Latency: {camera.latency.toFixed(0)}ms</span>
           <span className="flex items-center gap-1 text-hive-text-40"><Info className="w-3 h-3" /> Health: {camera.health}%</span>
         </div>
-        <button className="p-1 hover:bg-hive-text-10 rounded transition-colors text-hive-text-40">
+        <button className="text-hive-text-40 hover:text-hive-text transition-colors">
           <MoreVertical className="w-4 h-4" />
         </button>
       </div>
     </motion.div>
+  );
+}
+
+function RealtimeActivityLog() {
+  const [activities, setActivities] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const res = await fetch('http://localhost:3000/api/activities/latest?limit=10');
+        const data = await res.json();
+        if (data && data.activities) {
+          setActivities(data.activities);
+        }
+      } catch (err) {
+        console.error("Failed to fetch latest activities:", err);
+      }
+    };
+
+    fetchActivities();
+    const interval = setInterval(fetchActivities, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="glass p-6 rounded-lg w-full">
+      <div className="flex items-center justify-between mb-6 border-b border-hive-border pb-4">
+        <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-hive-text">
+          <Activity className="w-4 h-4 text-hive-success animate-pulse" />
+          Real-Time Activity Feed
+        </h3>
+        <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-hive-text-40 flex items-center gap-1">
+          <Clock className="w-3 h-3" /> Live
+        </span>
+      </div>
+      
+      <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+        {activities.length === 0 ? (
+          <div className="text-[10px] text-hive-text-40 uppercase tracking-widest text-center py-4">Waiting for pipeline detections...</div>
+        ) : (
+          activities.map((act, idx) => {
+            const timeStr = new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            return (
+              <motion.div 
+                key={`${act.timestamp}-${idx}`}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-hive-text-10 border border-hive-border rounded p-3 flex items-center justify-between hover:bg-hive-text-20 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded bg-hive-black flex items-center justify-center border border-hive-border">
+                    <User className="w-4 h-4 text-hive-text-50" />
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-widest text-hive-text">{act.name}</div>
+                    <div className="text-[9px] font-mono text-hive-text-40 mt-1 flex items-center gap-2">
+                      <span className="text-hive-accent">{act.action}</span>
+                      <span>•</span>
+                      <span>Conf: {(act.confidence * 100).toFixed(1)}%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[9px] font-bold uppercase tracking-widest text-hive-text-30">
+                  {timeStr}
+                </div>
+              </motion.div>
+            );
+          })
+        )}
+      </div>
+    </div>
   );
 }
