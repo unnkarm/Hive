@@ -25,7 +25,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, lambda *a: sys.exit(0))
     signal.signal(signal.SIGTERM, lambda *a: sys.exit(0))
 
-    port = int(os.getenv('VIDEO_STREAM_PORT', 5000))
+    port = int(os.getenv('VIDEO_STREAM_PORT', 5005))
     from werkzeug.serving import run_simple
 
     print(f"Starting HiveMind Surveillance Backend on port {port}...")

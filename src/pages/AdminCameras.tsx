@@ -304,7 +304,7 @@ function RealtimeActivityLog() {
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/activities/latest?limit=10');
+        const res = await fetch('http://localhost:5005/api/activities/latest?limit=10');
         const data = await res.json();
         if (data && data.activities) {
           setActivities(data.activities);

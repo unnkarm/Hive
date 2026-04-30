@@ -1,6 +1,7 @@
 """Reads frames from an RTSP/HLS camera stream via a background thread."""
 
 import logging
+import os
 import threading
 
 import cv2
@@ -32,16 +33,18 @@ class StreamConsumer:
     def open(self) -> bool:
         """Open the stream and start the background reader. Returns True on success."""
         import time
-        for i in range(5):
-            logger.info("Opening stream (attempt %d/5): %s", i + 1, self.stream_url)
-            self._cap = cv2.VideoCapture(self.stream_url)
+        for i in range(15):
+            logger.info("Opening stream (attempt %d/15): %s", i + 1, self.stream_url)
+            # Use FFMPEG backend explicitly and set TCP transport for RTSP to be more reliable
+            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
+            self._cap = cv2.VideoCapture(self.stream_url, cv2.CAP_FFMPEG)
             if self._cap.isOpened():
                 break
             logger.warning("Failed to open stream on attempt %d, retrying...", i + 1)
             time.sleep(1.0)
 
         if not self._cap or not self._cap.isOpened():
-            logger.error("Failed to open stream after 5 attempts: %s", self.stream_url)
+            logger.error("Failed to open stream after 15 attempts: %s", self.stream_url)
             return False
 
         self._cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)

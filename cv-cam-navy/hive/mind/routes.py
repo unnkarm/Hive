@@ -266,6 +266,16 @@ def register_routes(app):
             logger.error("Error fetching activities for %s: %s", person_id, e)
             return jsonify({"error": str(e)}), 500
 
+    @app.route('/api/persons/<person_id>/analytics', methods=['GET'])
+    def get_person_analytics(person_id):
+        """Retrieve aggregated analytics for a specific person."""
+        try:
+            analytics = app.activity_store.get_activity_analytics(person_id)
+            return jsonify(analytics), 200
+        except Exception as e:
+            logger.error("Error fetching analytics for %s: %s", person_id, e)
+            return jsonify({"error": str(e)}), 500
+
     @app.route('/api/activities/latest', methods=['GET'])
     def get_latest_activities():
         """Retrieve most recent activities across all persons."""
@@ -285,6 +295,8 @@ def register_routes(app):
             summary = app.activity_store.get_global_activity_summary()
             return jsonify({"summary": summary}), 200
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             logger.error("Error fetching activity summary: %s", e)
             return jsonify({"error": str(e)}), 500
 

@@ -7,6 +7,9 @@ import shutil
 from database import NodeStore, PersonStore, ActivityStore
 from cv.detector import PersonDetector
 from cv.reid import ReIdEmbedder
+from cv.face_detector import FaceDetector
+from cv.activity_recognizer import ActivityRecognizer
+from cv.emotion_recognizer import EmotionRecognizer
 from pipeline_manager import PipelineManager
 from stream.producer import HLS_ROOT
 
@@ -15,7 +18,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     datefmt='%H:%M:%S'
 )
-logging.getLogger('werkzeug').setLevel(logging.WARNING)
+logging.getLogger('werkzeug').setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -42,15 +45,19 @@ def create_app():
     detector = PersonDetector()
     app.detector = detector
     app.reid_embedder = ReIdEmbedder()
-    
-    from cv.face_detector import FaceDetector
     app.face_detector = FaceDetector()
+    app.activity_rec = ActivityRecognizer()
+    app.emotion_rec = EmotionRecognizer()
 
     app.pipeline_manager = PipelineManager(
         node_store=app.node_store,
         person_store=app.person_store,
         activity_store=app.activity_store,
         detector=detector,
+        face_detector=app.face_detector,
+        reid_embedder=app.reid_embedder,
+        activity_rec=app.activity_rec,
+        emotion_rec=app.emotion_rec
     )
     logger.info("Backend initialized (RTSP metadata service + detection pipeline + re-ID, Mongo-backed)")
 
@@ -62,5 +69,5 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    port = int(os.getenv("VIDEO_STREAM_PORT", "5000"))
+    port = int(os.getenv("VIDEO_STREAM_PORT", "5005"))
     app.run(debug=True, host='0.0.0.0', port=port)

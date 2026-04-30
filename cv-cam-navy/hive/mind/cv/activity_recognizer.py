@@ -31,20 +31,26 @@ class ActivityRecognizer:
         self.TALKING_ON_PHONE = "talking on phone"
         self.UNKNOWN = "unknown"
 
-    def recognize(self, frame: np.ndarray, person_det, context_dets) -> tuple[str, float]:
+    def recognize(self, frame: np.ndarray, person_det, context_dets) -> tuple[str, float, dict]:
         """
         Infers activity based on pose and surrounding objects.
-        person_det: (x1, y1, x2, y2, conf, cls)
-        context_dets: list of (x1, y1, x2, y2, conf, cls)
+        Returns (action, confidence, features)
         """
         x1, y1, x2, y2, conf, _ = person_det
         
+        # Features for temporal analysis
+        features = {
+            "hand_at_face": False,
+            "near_food_object": False,
+            "hand_near_food": False
+        }
+
         # 1. Posture Detection via bounding box and Pose
         person_w = x2 - x1
         person_h = y2 - y1
         
         if person_h == 0 or person_w == 0:
-            return self.UNKNOWN, 0.0
+            return self.UNKNOWN, 0.0, features
 
         # Heuristic 1: Aspect Ratio (fast)
         posture = self.STANDING
@@ -70,8 +76,6 @@ class ActivityRecognizer:
                         else:
                             posture = self.STANDING
                     else:
-                        # If knees aren't visible but hips are low in the bounding box,
-                        # it's likely an upper body crop of a standing person.
                         if hip_y > person_h * 0.7:
                             posture = self.STANDING
 
@@ -79,32 +83,29 @@ class ActivityRecognizer:
                 nose = self._get_kp(kp, 0)
                 l_wrist = self._get_kp(kp, 9)
                 r_wrist = self._get_kp(kp, 10)
-                
                 l_shoulder = self._get_kp(kp, 5)
                 r_shoulder = self._get_kp(kp, 6)
                 
-                nose = self._get_kp(kp, 0)
-                
-                hand_raised = False
+                hand_at_face = False
                 
                 # Heuristic A: Wrist above shoulder
                 if l_shoulder is not None and l_wrist is not None:
                     if l_wrist[1] < l_shoulder[1]:
-                        hand_raised = True
+                        hand_at_face = True
                 if r_shoulder is not None and r_wrist is not None:
                     if r_wrist[1] < r_shoulder[1]:
-                        hand_raised = True
+                        hand_at_face = True
                         
-                # Heuristic B: Wrist near face (distance based, handles top-down angles)
+                # Heuristic B: Wrist near face
+                # Heuristic B: Wrist near face
                 if nose is not None:
                     for wrist in [l_wrist, r_wrist]:
                         if wrist is not None:
                             dist = ((nose[0] - wrist[0])**2 + (nose[1] - wrist[1])**2)**0.5
-                            if dist < person_h * 0.30:  # 30% of body height radius
-                                hand_raised = True
+                            if dist < person_h * 0.35:  # Relaxed distance for better detection
+                                hand_at_face = True
                         
-                if hand_raised:
-                    posture = self.EATING
+                features["hand_at_face"] = hand_at_face
 
         # 2. Contextual Activity Override
         action = posture
@@ -116,12 +117,13 @@ class ActivityRecognizer:
         # Define "head region" as top 1/2 of the bounding box
         head_region_y2 = y1 + person_h // 2
 
+        food_objects = [self.CUP, self.BOTTLE, self.BOWL, self.DINING_TABLE]
+
         for cx1, cy1, cx2, cy2, cconf, ccls in context_dets:
-            if not self._is_near((x1, y1, x2, y2), (cx1, cy1, cx2, cy2)):
+            if not self._is_near((x1, y1, x2, y2), (cx1, cy1, cx2, cy2), padding=60): # Stricter padding
                 continue
                 
             if ccls == self.CELL_PHONE:
-                # Phone near head?
                 if cy1 < head_region_y2 or cy2 < head_region_y2:
                     near_phone = True
             elif ccls in [self.LAPTOP, self.KEYBOARD]:
@@ -129,21 +131,20 @@ class ActivityRecognizer:
                 near_desk_objects = True
             elif ccls in [self.CHAIR, self.DINING_TABLE]:
                 near_desk_objects = True
-            elif ccls in [self.CUP, self.BOTTLE, self.BOWL, self.DINING_TABLE]:
-                action = self.EATING
+            elif ccls in food_objects:
+                features["near_food_object"] = True
                 near_desk_objects = True
 
         if near_phone:
             action = self.TALKING_ON_PHONE
-        elif action == self.EATING:
-            # Keep eating if it was detected, even if laptop is near
-            pass
-        elif near_laptop:
+        elif near_laptop and posture == self.SITTING:
             action = self.WORKING_ON_LAPTOP
         elif posture == self.STANDING and not near_desk_objects:
             action = self.WORKING_ON_FIELD
+        elif posture == self.SITTING and near_desk_objects:
+            action = self.SITTING
             
-        return action, conf
+        return action, conf, features
 
     def _get_avg_y(self, kp, indices, threshold=0.5):
         vals = [kp[i][1] for i in indices if kp[i][2] > threshold]

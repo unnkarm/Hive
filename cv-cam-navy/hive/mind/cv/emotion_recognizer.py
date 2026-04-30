@@ -17,8 +17,8 @@ class EmotionRecognizer:
         self.NEUTRAL = "neutral"
         
         # Heuristic thresholds
-        self.SMILE_THRESHOLD = 0.82
-        self.LAUGH_THRESHOLD = 0.95
+        self.SMILE_THRESHOLD = 0.78
+        self.LAUGH_THRESHOLD = 0.88
 
         if self.model_path:
             try:

@@ -12,36 +12,33 @@ export function AdminSessions() {
   const [realSessions, setRealSessions] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/activities/summary')
+    fetch('http://localhost:5005/api/activities/summary')
       .then(res => res.json())
       .then(data => {
         if (!data.summary) return;
         
-        const grouped = data.summary.reduce((acc: any, curr: any) => {
-          if (!acc[curr.name]) acc[curr.name] = { id: curr.person_id, name: curr.name, totalSec: 0, activities: [] };
-          acc[curr.name].totalSec += curr.total_seconds;
-          acc[curr.name].activities.push(curr);
-          return acc;
-        }, {});
-
-        const mapped = Object.values(grouped).map((p: any) => {
-          const dist = p.activities.map((a: any) => ({
+        const mapped = data.summary.map((p: any) => {
+          const dist = (p.activity_distribution || []).map((a: any) => ({
             label: a.action,
-            percentage: Math.round((a.total_seconds / p.totalSec) * 100)
+            percentage: p.total_seconds > 0 ? Math.round((a.seconds / p.total_seconds) * 100) : 0
           }));
           
-          const hrs = Math.floor(p.totalSec / 3600);
-          const mins = Math.floor((p.totalSec % 3600) / 60);
+          const hrs = Math.floor(p.total_seconds / 3600);
+          const mins = Math.floor((p.total_seconds % 3600) / 60);
           const duration = `${hrs}h ${mins}m`;
 
+          // Format times
+          const start = new Date(p.first_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const end = new Date(p.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
           return {
-            id: p.id,
+            id: p.person_id,
             name: p.name,
-            startTime: 'NA',
-            endTime: 'NA',
-            date: 'NA',
+            startTime: start,
+            endTime: end,
+            date: p.date,
             duration: duration,
-            zonesVisited: ['NA'],
+            zonesVisited: (p.zones && p.zones.length > 0) ? p.zones : ['NA'],
             activityDistribution: dist
           };
         });
@@ -63,7 +60,7 @@ export function AdminSessions() {
         {realSessions.map((session, i) => {
           return (
             <motion.div 
-              key={session.id}
+              key={`${session.id}-${i}`}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.1 }}

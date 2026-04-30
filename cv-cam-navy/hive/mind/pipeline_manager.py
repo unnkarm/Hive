@@ -1,24 +1,20 @@
 """Manages per-camera detection pipelines with person re-identification.
 
-The stream loop runs in a thread (main process), while YOLO detection and
-re-ID matching run in a separate subprocess so that their GIL activity
-never stalls frame output.  All workers share a single gallery via shared
-memory for cross-camera identification.
+The stream loop runs in a thread, while YOLO detection and
+re-ID matching run in another dedicated thread. All workers share
+a single globally loaded set of models to eliminate startup latency.
 """
 
 import logging
-import multiprocessing
 import os
 import queue
 import sys
 import threading
 import time
-from multiprocessing import shared_memory
 
 import cv2
 import numpy as np
 
-from cv.detector import PersonDetector
 from stream.consumer import StreamConsumer
 from stream.producer import StreamProducer
 
@@ -28,7 +24,7 @@ DEFAULT_STREAM_FPS = float(os.getenv("PIPELINE_FPS", "10"))
 DEFAULT_DETECT_FPS = float(os.getenv("DETECT_FPS", "2"))
 RETRY_OPEN_DELAY = 5.0
 REID_THRESHOLD = 0.50
-FACE_THRESHOLD = 0.50
+FACE_THRESHOLD = 0.55
 FACE_REGION_RATIO = 0.45
 
 _MIND_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -47,78 +43,48 @@ def _build_annotated_url(node_id: str) -> str:
     return f"{base}/streams/{node_id}/index.m3u8"
 
 
-# ── Detection + re-ID subprocess ─────────────────────────────────────
+# ── Detection Worker Thread ──────────────────────────────────────────
 
 def _detection_worker(
     node_id: str,
-    model_size: str,
-    shm_name: str,
-    frame_shape: tuple,
-    result_queue: multiprocessing.Queue,
-    stop_event: multiprocessing.Event,
+    frame_queue: queue.Queue,
+    result_queue: queue.Queue,
+    stop_event: threading.Event,
     detect_fps: float,
-    gallery_shm_name: str,
-    gallery_lock: multiprocessing.Lock,
+    pipeline_manager, # Reference to the global pipeline manager to access models and gallery
 ):
-    """Runs YOLO inference + re-ID matching + activity recognition in a dedicated process."""
-    import logging as _log
-    _log.basicConfig(
-        level=_log.DEBUG,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%H:%M:%S",
-    )
-    log = _log.getLogger("DetectWorker")
-
-    for p in [_MIND_DIR] + sys.path:
-        if p and p not in sys.path:
-            sys.path.insert(0, p)
-
-    from cv.detector import PersonDetector as _PD
-    from cv.gallery import GallerySharedMemory
-    from cv.reid import ReIdEmbedder
-    from cv.face_detector import FaceDetector
-    from cv.activity_recognizer import ActivityRecognizer
-    from cv.emotion_recognizer import EmotionRecognizer
-    from database import ActivityStore
-
-    log.info("Loading YOLO model: %s", model_size)
-    detector = _PD(model_size)
+    """Runs YOLO inference + re-ID matching + activity recognition in a dedicated thread."""
+    log = logging.getLogger("DetectWorker")
     
-    # We want to detect persons (0) and context objects
+    detector = pipeline_manager.detector
+    embedder = pipeline_manager.reid_embedder
+    face_detector = pipeline_manager.face_detector
+    activity_rec = pipeline_manager.activity_rec
+    emotion_rec = pipeline_manager.emotion_rec
+    activity_store = pipeline_manager.activity_store
+
     CONTEXT_CLASSES = [0, 63, 66, 41, 39, 45, 56, 60, 67]
-
-    log.info("Loading re-ID model")
-    embedder = ReIdEmbedder()
-    
-    log.info("Loading ArcFace model")
-    face_detector = FaceDetector()
-    
-    log.info("Loading Activity recognizer")
-    activity_rec = ActivityRecognizer()
-    log.info("Loading Emotion recognizer")
-    emotion_rec = EmotionRecognizer()
-    activity_store = ActivityStore()
 
     # Track last activity per person (identified or unknown) to detect changes
     last_activities = {} 
     person_states = {} # Track mouth movement and orientation
 
-    gallery_shm = GallerySharedMemory(
-        create=False, shm_name=gallery_shm_name, lock=gallery_lock,
-    )
-
-    shm = shared_memory.SharedMemory(name=shm_name)
-    frame_buf = np.ndarray(frame_shape, dtype=np.uint8, buffer=shm.buf)
-
     detect_interval = 1.0 / detect_fps
-    log.info("Detection subprocess ready (%.1f fps, re-ID enabled)", detect_fps)
+    log.info("Detection thread ready (%.1f fps, re-ID enabled)", detect_fps)
 
     try:
         while not stop_event.is_set():
             loop_start = time.monotonic()
+            
+            # Get the latest frame, skipping older ones
+            frame = None
+            try:
+                while True:
+                    frame = frame_queue.get_nowait()
+            except queue.Empty:
+                pass
 
-            frame = frame_buf.copy()
-            if frame.any():
+            if frame is not None and frame.any():
                 # Detect persons and context objects
                 all_detections = detector.detect(frame, classes=CONTEXT_CLASSES)
                 
@@ -128,7 +94,12 @@ def _detection_worker(
                 person_detections = [d for d in all_detections if d[5] == 0]
                 context_detections = [d for d in all_detections if d[5] != 0]
 
-                gallery_ids, gallery_names, gallery_matrix, face_matrix = gallery_shm.read()
+                # Get latest gallery safely
+                with pipeline_manager._gallery_lock:
+                    gallery_ids = pipeline_manager._gallery_ids
+                    gallery_names = pipeline_manager._gallery_names
+                    gallery_matrix = pipeline_manager._gallery_matrix
+                    face_matrix = pipeline_manager._face_matrix
 
                 identified = []
 
@@ -190,13 +161,24 @@ def _detection_worker(
                                     log.info("[%s] Identified %s via Re-ID (score: %.2f)", node_id, name, float(sims[best]))
 
                     # 3. Activity Recognition
-                    action, action_conf = activity_rec.recognize(frame, det, context_detections)
+                    action, action_conf, act_features = activity_rec.recognize(frame, det, context_detections)
                     
-                    # Track mouth width for talking detection
+                    # Track mouth width and activity history for smoothing
                     key = person_id if person_id != "unknown" else f"unknown_{x1}_{y1}"
                     if key not in person_states:
-                        person_states[key] = {"widths": [], "yaw": 0.0, "pos": (x1+(x2-x1)//2, y1+(y2-y1)//2)}
+                        person_states[key] = {
+                            "widths": [], 
+                            "yaw": 0.0, 
+                            "pos": (x1+(x2-x1)//2, y1+(y2-y1)//2),
+                            "history": [], # For activity smoothing
+                            "hand_at_face_frames": 0,
+                            "eating_score": 0.0,
+                            "talking_score": 0.0,
+                            "mouth_std": 0.0
+                        }
                     
+                    # --- Improved Talking Detection ---
+                    mouth_std = 0.0
                     if emotion_kps is not None:
                         mw = emotion_rec.get_mouth_width(emotion_kps)
                         person_states[key]["widths"].append(mw)
@@ -205,10 +187,59 @@ def _detection_worker(
                         
                         # Fluctuation check (std dev)
                         if len(person_states[key]["widths"]) >= 5:
-                            std = np.std(person_states[key]["widths"])
-                            if std > 0.008: # Threshold for mouth movement
-                                action = "talking"
+                            mouth_std = float(np.std(person_states[key]["widths"]))
+                            if mouth_std > 0.020: # High threshold for individual talking
+                                person_states[key]["talking_score"] = min(1.0, person_states[key]["talking_score"] + 0.3)
+                            else:
+                                person_states[key]["talking_score"] *= 0.85
+                                
+                            # Individual "talking" is now DISABLED. 
+                            # It only triggers in the social interaction pass below.
+                        person_states[key]["mouth_std"] = mouth_std
                     
+                    # --- Improved Eating Detection (Temporal) ---
+                    # If hand is at face, increment frames
+                    if act_features["hand_at_face"]:
+                        person_states[key]["hand_at_face_frames"] = min(20, person_states[key]["hand_at_face_frames"] + 1)
+                    else:
+                        person_states[key]["hand_at_face_frames"] = max(0, person_states[key]["hand_at_face_frames"] - 1)
+                    
+                    # Eating criteria:
+                    # 1. Mouth moving in "chewing range" (Broadened range)
+                    # 2. Hand was recently at face
+                    # 3. Near food objects helps speed up detection
+                    is_chewing = 0.002 < mouth_std < 0.018
+                    
+                    if act_features["near_food_object"]:
+                        # Faster trigger if food objects are present
+                        if person_states[key]["hand_at_face_frames"] >= 1 and (is_chewing or mouth_std == 0):
+                            action = "eating"
+                            person_states[key]["eating_score"] = min(1.0, person_states[key]["eating_score"] + 0.2)
+                    else:
+                        # More evidence needed without food objects
+                        if person_states[key]["hand_at_face_frames"] >= 3 and is_chewing:
+                            action = "eating"
+                            person_states[key]["eating_score"] = min(1.0, person_states[key]["eating_score"] + 0.15)
+
+                    # Decay eating score and apply it
+                    person_states[key]["eating_score"] *= 0.92
+                    if person_states[key]["eating_score"] > 0.4:
+                        # Only override if we are not currently doing something even more specific like talking on phone
+                        if action in ["sitting", "standing", "working on field"]:
+                            action = "eating"
+
+                    # Apply Activity Smoothing (Mode over last 20 detections for stability)
+                    person_states[key]["history"].append(action)
+                    if len(person_states[key]["history"]) > 20:
+                        person_states[key]["history"].pop(0)
+                    
+                    if len(person_states[key]["history"]) >= 3:
+                        # Find most frequent action
+                        from collections import Counter
+                        counts = Counter(person_states[key]["history"])
+                        smoothed_action = counts.most_common(1)[0][0]
+                        action = smoothed_action
+
                     # Store current state for social pass
                     person_states[key]["yaw"] = person_yaw
                     person_states[key]["pos"] = (x1+(x2-x1)//2, y1+(y2-y1)//2)
@@ -217,14 +248,15 @@ def _detection_worker(
                     if emotion:
                         action = f"{action} ({emotion})"
                     
-                    # 4. Log Activity Change (Temporary, will be updated in social pass if needed)
+                    # 4. Log Activity Change
                     identified.append({
                         "id": key,
                         "det": (x1, y1, x2, y2, conf, name, action),
                         "person_id": person_id,
                         "name": name,
                         "action": action,
-                        "conf": action_conf
+                        "conf": action_conf,
+                        "mouth_std": person_states[key].get("mouth_std", 0.0)
                     })
 
                 # --- 5. Social Interaction Pass ---
@@ -240,19 +272,15 @@ def _detection_worker(
                         
                         # Threshold based on avg person height
                         avg_h = ((p1["det"][3]-p1["det"][1]) + (p2["det"][3]-p2["det"][1])) / 2
-                        if dist < avg_h * 1.5:
-                            # Facing each other?
-                            # Vector from p1 to p2
-                            vec = (pos2[0] - pos1[0], pos2[1] - pos1[1])
-                            angle_to_p2 = np.degrees(np.arctan2(vec[1], vec[0]))
-                            
-                            # Rough yaw check
-                            # Yaw 0 is facing camera. 
-                            # If p2 is to the right of p1, p1 should have yaw > 0 and p2 should have yaw < 0
-                            if (pos2[0] > pos1[0] and yaw1 > 20 and yaw2 < -20) or \
-                               (pos1[0] > pos2[0] and yaw1 < -20 and yaw2 > 20):
-                                p1["action"] = "talking" if "talking" not in p1["action"] else p1["action"]
-                                p2["action"] = "talking" if "talking" not in p2["action"] else p2["action"]
+                        
+                        if dist < avg_h * 1.1:
+                            if (pos2[0] > pos1[0] and yaw1 > 40 and yaw2 < -40) or \
+                               (pos1[0] > pos2[0] and yaw1 < -40 and yaw2 > 40):
+                                # Require some history of mouth movement
+                                if p1.get("mouth_std", 0) > 0.015 or p2.get("mouth_std", 0) > 0.015 or \
+                                   person_states[k1].get("talking_score", 0) > 0.4 or person_states[k2].get("talking_score", 0) > 0.4:
+                                    p1["action"] = "talking" if "talking" not in p1["action"] else p1["action"]
+                                    p2["action"] = "talking" if "talking" not in p2["action"] else p2["action"]
 
                 # Final results assembly
                 final_results = []
@@ -268,7 +296,6 @@ def _detection_worker(
                     if p["person_id"] != "unknown":
                         key, action = p["id"], p["action"]
                         
-                        # Continuously update session for duration tracking
                         try:
                             activity_store.update_session(
                                 person_id=p["person_id"],
@@ -279,7 +306,6 @@ def _detection_worker(
                         except Exception as e:
                             log.error("Failed to update session: %s", e)
 
-                        # Log discrete events only when the action changes
                         if key not in last_activities or last_activities[key] != action:
                             try:
                                 activity_store.log_activity(
@@ -303,56 +329,60 @@ def _detection_worker(
             if remaining > 0:
                 stop_event.wait(remaining)
     except Exception:
-        log.exception("Detection subprocess error")
+        log.exception("Detection thread error")
     finally:
-        shm.close()
-        gallery_shm.close()
-        log.info("Detection subprocess exiting")
+        log.info("Detection thread exiting")
 
 
 # ── Camera worker ─────────────────────────────────────────────────────
 
 class _CameraWorker:
-    """Runs streaming in a thread and detection in a subprocess.
-
-    The stream thread reads RTSP frames, draws cached detection boxes,
-    and pipes annotated frames to FFmpeg -- all without competing for the
-    GIL with YOLO inference.
-    """
+    """Runs streaming and detection in separate threads."""
 
     def __init__(
         self,
         node_id: str,
         stream_url: str,
-        model_size: str,
         node_store,
-        gallery_shm_name: str,
-        gallery_lock: multiprocessing.Lock,
+        pipeline_manager,
         stream_fps: float = DEFAULT_STREAM_FPS,
         detect_fps: float = DEFAULT_DETECT_FPS,
     ):
         self.node_id = node_id
         self.stream_url = stream_url
-        self.model_size = model_size
         self.node_store = node_store
-        self.gallery_shm_name = gallery_shm_name
-        self.gallery_lock = gallery_lock
+        self.pipeline_manager = pipeline_manager
         self.stream_fps = stream_fps
         self.detect_fps = detect_fps
 
         self._stream_thread: threading.Thread | None = None
-        self._detect_process: multiprocessing.Process | None = None
-        self._stop_thread_event = threading.Event()
-        self._stop_process_event: multiprocessing.Event | None = None
+        self._detect_thread: threading.Thread | None = None
+        self._stop_event = threading.Event()
 
-        self._detection_queue: multiprocessing.Queue | None = None
-        self._shm: shared_memory.SharedMemory | None = None
+        self._frame_queue = queue.Queue(maxsize=4)
+        self._result_queue = queue.Queue(maxsize=4)
         self._detections: list = []
 
-    # ── lifecycle ─────────────────────────────────────────────────
-
     def start(self):
-        self._stop_thread_event.clear()
+        self._stop_event.clear()
+        
+        # Start detection thread immediately without waiting for stream
+        self._detect_thread = threading.Thread(
+            target=_detection_worker,
+            args=(
+                self.node_id,
+                self._frame_queue,
+                self._result_queue,
+                self._stop_event,
+                self.detect_fps,
+                self.pipeline_manager,
+            ),
+            name=f"detect-{self.node_id}",
+            daemon=True,
+        )
+        self._detect_thread.start()
+        logger.info("Detection thread started instantly for node %s", self.node_id)
+
         self._stream_thread = threading.Thread(
             target=self._stream_loop,
             name=f"stream-{self.node_id}",
@@ -360,89 +390,32 @@ class _CameraWorker:
         )
         self._stream_thread.start()
 
-    def _start_detection_process(self, width: int, height: int):
-        """Spawn the detection subprocess once we know frame dimensions."""
-        frame_shape = (height, width, 3)
-        frame_nbytes = int(np.prod(frame_shape)) * np.dtype(np.uint8).itemsize
-
-        self._shm = shared_memory.SharedMemory(create=True, size=frame_nbytes)
-        self._detection_queue = multiprocessing.Queue(maxsize=4)
-        self._stop_process_event = multiprocessing.Event()
-
-        self._detect_process = multiprocessing.Process(
-            target=_detection_worker,
-            args=(
-                self.node_id,
-                self.model_size,
-                self._shm.name,
-                frame_shape,
-                self._detection_queue,
-                self._stop_process_event,
-                self.detect_fps,
-                self.gallery_shm_name,
-                self.gallery_lock,
-            ),
-            name=f"detect-{self.node_id}",
-            daemon=True,
-        )
-        self._detect_process.start()
-        logger.info(
-            "Detection subprocess started for node %s (pid=%d)",
-            self.node_id, self._detect_process.pid,
-        )
-
     def stop(self):
-        self._stop_thread_event.set()
-        if self._stop_process_event is not None:
-            self._stop_process_event.set()
+        self._stop_event.set()
 
         if self._stream_thread is not None:
-            self._stream_thread.join(timeout=10)
+            self._stream_thread.join(timeout=5)
             self._stream_thread = None
 
-        if self._detect_process is not None:
-            self._detect_process.join(timeout=10)
-            if self._detect_process.is_alive():
-                self._detect_process.kill()
-            self._detect_process = None
-
-        if self._shm is not None:
-            self._shm.close()
-            self._shm.unlink()
-            self._shm = None
-
-        if self._detection_queue is not None:
-            self._detection_queue.close()
-            self._detection_queue = None
+        if self._detect_thread is not None:
+            self._detect_thread.join(timeout=5)
+            self._detect_thread = None
 
     @property
     def is_alive(self) -> bool:
         stream_ok = self._stream_thread is not None and self._stream_thread.is_alive()
-        detect_ok = self._detect_process is not None and self._detect_process.is_alive()
+        detect_ok = self._detect_thread is not None and self._detect_thread.is_alive()
         return stream_ok and detect_ok
 
-    # ── helpers ───────────────────────────────────────────────────
-
     def _drain_detections(self):
-        """Pull all pending detections from the queue, keep the latest."""
-        if self._detection_queue is None:
-            return
         latest = None
         try:
             while True:
-                latest = self._detection_queue.get_nowait()
-        except (queue.Empty, OSError):
+                latest = self._result_queue.get_nowait()
+        except queue.Empty:
             pass
         if latest is not None:
             self._detections = latest
-
-    def _write_frame_to_shm(self, frame: np.ndarray):
-        """Copy the current frame into shared memory for the detector."""
-        if self._shm is not None:
-            shm_buf = np.ndarray(frame.shape, dtype=frame.dtype, buffer=self._shm.buf)
-            np.copyto(shm_buf, frame)
-
-    # ── Stream loop (high fps) ───────────────────────────────────
 
     def _stream_loop(self):
         consumer = StreamConsumer(self.stream_url, target_fps=self.stream_fps)
@@ -461,16 +434,14 @@ class _CameraWorker:
             )
             producer.start()
 
-            self._start_detection_process(consumer.width, consumer.height)
-
             annotated_url = _build_annotated_url(self.node_id)
             self.node_store.set_annotated_stream_url(self.node_id, annotated_url)
             logger.info(
-                "Pipeline running for node %s -> %s (stream %gfps, detect %gfps)",
+                "Pipeline streaming running for node %s -> %s (stream %gfps, detect %gfps)",
                 self.node_id, annotated_url, self.stream_fps, self.detect_fps,
             )
 
-            while not self._stop_thread_event.is_set():
+            while not self._stop_event.is_set():
                 loop_start = time.monotonic()
 
                 ok, frame = consumer.read_frame()
@@ -478,17 +449,22 @@ class _CameraWorker:
                     logger.warning("Lost stream for node %s, retrying...", self.node_id)
                     consumer.release()
                     time.sleep(RETRY_OPEN_DELAY)
-                    if self._stop_thread_event.is_set():
+                    if self._stop_event.is_set():
                         break
                     if not consumer.open():
                         logger.error("Retry failed for node %s, worker exiting", self.node_id)
                         break
                     continue
 
-                self._write_frame_to_shm(frame)
+                # Pass frame to detection thread
+                try:
+                    self._frame_queue.put_nowait(frame)
+                except queue.Full:
+                    pass
+
                 self._drain_detections()
 
-                annotated = PersonDetector.annotate(frame, self._detections)
+                annotated = self.pipeline_manager.detector.annotate(frame, self._detections)
 
                 try:
                     producer.write_frame(annotated)
@@ -499,7 +475,7 @@ class _CameraWorker:
                 elapsed = time.monotonic() - loop_start
                 sleep_time = consumer.frame_interval - elapsed
                 if sleep_time > 0:
-                    self._stop_thread_event.wait(sleep_time)
+                    self._stop_event.wait(sleep_time)
 
         except Exception:
             logger.exception("Unexpected error in stream loop for node %s", self.node_id)
@@ -514,36 +490,47 @@ class _CameraWorker:
 # ── Pipeline manager ──────────────────────────────────────────────────
 
 class PipelineManager:
-    """Coordinates detection pipelines across all online camera nodes."""
+    """Coordinates detection pipelines across all online camera nodes.
+    
+    Models are loaded globally once at initialization to eliminate startup latency.
+    """
 
-    def __init__(self, node_store, person_store, activity_store, detector: PersonDetector):
+    def __init__(self, node_store, person_store, activity_store, 
+                 detector, face_detector, reid_embedder, activity_rec, emotion_rec):
         self.node_store = node_store
         self.person_store = person_store
         self.activity_store = activity_store
+        
+        # Pre-loaded AI models
         self.detector = detector
-        self._model_size = os.getenv("YOLO_MODEL", "yolov8n")
+        self.face_detector = face_detector
+        self.reid_embedder = reid_embedder
+        self.activity_rec = activity_rec
+        self.emotion_rec = emotion_rec
+
         self._workers: dict[str, _CameraWorker] = {}
         self._lock = threading.Lock()
 
-        from cv.gallery import GallerySharedMemory
-        self._gallery_lock = multiprocessing.Lock()
-        self._gallery_shm = GallerySharedMemory(
-            create=True, lock=self._gallery_lock,
-        )
+        self._gallery_lock = threading.Lock()
+        self._gallery_ids = []
+        self._gallery_names = []
+        self._gallery_matrix = None
+        self._face_matrix = None
+        
         self._load_gallery()
 
     def _load_gallery(self):
-        """Read the person gallery from DB and write it into shared memory."""
+        """Read the person gallery from DB and store it in memory."""
         ids, names, matrix, face_matrix = self.person_store.get_all_embeddings()
-        self._gallery_shm.write(ids, names, matrix, face_matrix)
-        logger.info("Gallery loaded: %d persons", len(ids))
+        with self._gallery_lock:
+            self._gallery_ids = ids
+            self._gallery_names = names
+            self._gallery_matrix = matrix
+            self._face_matrix = face_matrix
+        logger.info("Gallery loaded in memory: %d persons", len(ids))
 
     def refresh_gallery(self):
-        """Reload the gallery from DB into shared memory.
-
-        Called from routes after a person is registered or deleted so that
-        running detection workers pick up the change on their next cycle.
-        """
+        """Reload the gallery from DB."""
         self._load_gallery()
 
     def start(self):
@@ -562,10 +549,8 @@ class PipelineManager:
                 worker = _CameraWorker(
                     node_id=node_id,
                     stream_url=stream_url,
-                    model_size=self._model_size,
                     node_store=self.node_store,
-                    gallery_shm_name=self._gallery_shm.shm_name,
-                    gallery_lock=self._gallery_lock,
+                    pipeline_manager=self,
                 )
                 worker.start()
                 self._workers[node_id] = worker
@@ -582,9 +567,8 @@ class PipelineManager:
         logger.info("All pipelines stopped")
 
     def cleanup(self):
-        """Stop pipelines and release the gallery shared memory."""
+        """Stop pipelines."""
         self.stop()
-        self._gallery_shm.unlink()
 
     def get_status(self) -> dict:
         """Return current pipeline status."""

@@ -232,6 +232,9 @@ class CameraNode:
                 # Flip frame horizontally (mirror effect)
                 frame = cv2.flip(frame, 1)
 
+                if frame.shape[:2] != (self.frame_height, self.frame_width):
+                    frame = cv2.resize(frame, (self.frame_width, self.frame_height))
+
                 if not self.ffmpeg_process or self.ffmpeg_process.poll() is not None:
                     raise RuntimeError("FFmpeg process is not running")
                 self.ffmpeg_process.stdin.write(frame.tobytes())

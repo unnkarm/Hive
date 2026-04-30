@@ -615,6 +615,14 @@ class ActivityStore:
         self.collection.insert_one(doc)
         return doc
 
+    def get_latest(self, limit: int = 10) -> list[dict]:
+        """Return the N most recent activity records."""
+        docs = self.collection.find(
+            sort=[("timestamp", -1)],
+            limit=limit,
+        )
+        return [self._serialize(doc) for doc in docs]
+
     def get_person_activity(self, person_id: str, limit: int = 50) -> list[dict]:
         """Return recent activities for a specific person."""
         docs = self.collection.find(
@@ -669,7 +677,7 @@ class ActivityStore:
             "node_id": node_id
         })
 
-    def get_activity_analytics(self, person_id: str):
+    def get_person_activity_report(self, person_id: str):
         """Aggregate session data for total time and timeline."""
         now = now_ist()
         from datetime import timedelta
@@ -723,33 +731,110 @@ class ActivityStore:
         
         pipeline = [
             {"$match": {"start_time": {"$gte": start_of_day}}},
+            # Stage 1: Group by person and action to sum seconds per action
             {"$group": {
-                "_id": { "person_id": "$person_id", "name": "$name", "action": "$action" },
-                "total_seconds": {"$sum": "$duration_seconds"},
+                "_id": {"person_id": "$person_id", "action": "$action"},
+                "name": {"$first": "$name"},
+                "action_seconds": {"$sum": "$duration_seconds"},
+                "first_seen": {"$min": "$start_time"},
+                "last_seen": {"$max": "$last_seen"},
+                "nodes": {"$addToSet": "$node_id"}
             }},
+            # Stage 2: Group by person to combine actions into a list
+            {"$group": {
+                "_id": "$_id.person_id",
+                "name": {"$first": "$name"},
+                "total_seconds": {"$sum": "$action_seconds"},
+                "first_seen": {"$min": "$first_seen"},
+                "last_seen": {"$max": "$last_seen"},
+                "nodes": {"$push": "$nodes"},
+                "actions": {"$push": {
+                    "action": "$_id.action",
+                    "seconds": "$action_seconds"
+                }}
+            }},
+            # Stage 3: Flatten and deduplicate nodes (handled in Python)
             {"$sort": {"total_seconds": -1}}
         ]
         results = list(self.session_collection.aggregate(pipeline))
+        # Flatten node lists and deduplicate nodes in Python
+        for r in results:
+            flat = []
+            for sub in r.get("nodes", []):
+                flat.extend(sub)
+            r["nodes"] = list(set(flat))
         
+        # Ongoing sessions
         ongoing = list(self.session_collection.find({"end_time": None}))
         for sess in ongoing:
-            person_id = sess["person_id"]
+            # Normalize to IST before comparing with start_of_day (which is aware)
+            ist_start = self._to_ist(sess["start_time"])
+            if ist_start < start_of_day: continue
+            
+            p_id = sess["person_id"]
             name = sess["name"]
             action = sess["action"]
-            duration = (now - self._to_ist(sess["start_time"])).total_seconds()
+            node_id = sess["node_id"]
+            
+            # Use aware datetimes for everything
+            sess_start = self._to_ist(sess["start_time"])
+            sess_last = self._to_ist(sess["last_seen"])
+            duration = (now - sess_start).total_seconds()
             
             found = False
             for res in results:
-                if res["_id"]["person_id"] == person_id and res["_id"]["action"] == action:
+                if res["_id"] == p_id:
                     res["total_seconds"] += duration
+                    # Both must be aware
+                    res_last = self._to_ist(res.get("last_seen", sess_last))
+                    res["last_seen"] = max(res_last, sess_last)
+                    if "nodes" not in res: res["nodes"] = []
+                    if node_id not in res["nodes"]:
+                        res["nodes"].append(node_id)
+                    
+                    if "actions" not in res: res["actions"] = []
+                    # Add to actions list for distribution
+                    found_action = False
+                    for a in res["actions"]:
+                        if a["action"] == action:
+                            a["seconds"] += duration
+                            found_action = True
+                            break
+                    if not found_action:
+                        res["actions"].append({"action": action, "seconds": duration})
                     found = True
                     break
             if not found:
-                results.append({"_id": {"person_id": person_id, "name": name, "action": action}, "total_seconds": duration})
+                results.append({
+                    "_id": p_id,
+                    "name": name,
+                    "total_seconds": duration,
+                    "first_seen": sess_start,
+                    "last_seen": sess_last,
+                    "nodes": [node_id],
+                    "actions": [{"action": action, "seconds": duration}]
+                })
 
-        return [{
-            "person_id": r["_id"]["person_id"],
-            "name": r["_id"]["name"],
-            "action": r["_id"]["action"],
-            "total_seconds": r["total_seconds"]
-        } for r in results]
+        # Final serialization
+        formatted = []
+        for r in results:
+            dist_map = {}
+            for a in r["actions"]:
+                dist_map[a["action"]] = dist_map.get(a["action"], 0) + a["seconds"]
+            
+            # Filter out None values to avoid sort errors
+            zones = sorted(list(set(n for n in r.get("nodes", []) if n)))
+            
+            formatted.append({
+                "person_id": r["_id"],
+                "name": r["name"],
+                "total_seconds": r["total_seconds"],
+                "first_seen": self._to_ist(r["first_seen"]).isoformat(),
+                "last_seen": self._to_ist(r["last_seen"]).isoformat(),
+                "date": self._to_ist(r["first_seen"]).strftime("%Y-%m-%d"),
+                "zones": zones,
+                "activity_distribution": [
+                    {"action": act, "seconds": sec} for act, sec in dist_map.items()
+                ]
+            })
+        return formatted

@@ -43,7 +43,7 @@ type ActivitySummaryItem = {
 type ActivitySummaryResponse = { summary: ActivitySummaryItem[] };
 
 const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
 ).replace(/\/$/, "");
 const CAMERA_POLL_MS = 2000;
 
