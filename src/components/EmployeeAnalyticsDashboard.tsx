@@ -1,13 +1,12 @@
 import { motion } from 'motion/react';
+import { useEffect, useMemo, useState } from 'react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   BarChart, Bar, Cell, PieChart, Pie, Legend,
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   AreaChart, Area, RadialBarChart, RadialBar, ScatterChart, Scatter, ZAxis
 } from 'recharts';
-import { generateEmployeeHistory, getSummary } from '../lib/mockData';
 import { Clock, MessageSquare, Utensils, Zap, MapPin, TrendingUp, AlertTriangle, Users, Layers, Shield, List, Grid } from 'lucide-react';
-import { useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../lib/AuthContext';
 
@@ -18,40 +17,66 @@ interface Props {
 
 type ViewMode = 'visual' | 'tabular';
 
-const COLORS = ['#06B6D4', '#3B82F6', '#10B981', '#EF4444', '#8B5CF6', '#EC4899']; // Hive Cyan First
+const COLORS = ['#06B6D4', '#3B82F6', '#10B981', '#EF4444', '#8B5CF6', '#EC4899'];
 
 export function EmployeeAnalyticsDashboard({ employeeId, name }: Props) {
   const { theme } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>('visual');
-  const history = useMemo(() => generateEmployeeHistory(employeeId), [employeeId]);
-  const summary = useMemo(() => getSummary(history), [history]);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    setLoading(true);
+    fetch(`http://localhost:5005/api/persons/${employeeId}/analytics`)
+      .then(res => res.json())
+      .then(data => {
+        setAnalytics(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, [employeeId]);
 
-  // Productivity activities: Working, Eating, Discussing
-  // Non-productivity activities: Talking, Smoking, Loitering
-  const pieData = [
-    { name: 'Working', value: summary.totalHours ? parseFloat(summary.totalHours) : 0, type: 'productive' },
-    { name: 'Talking', value: summary.totalTalking ? parseFloat(summary.totalTalking) : 0, type: 'non-productive' },
-    { name: 'Lunch', value: summary.totalLunch ? parseFloat(summary.totalLunch) : 0, type: 'productive' },
-    { name: 'Inactive', value: history.reduce((acc, curr) => acc + (curr.inactiveTime || 0), 0), type: 'non-productive' },
-  ];
+  const summaryStats = useMemo(() => {
+    if (!analytics || !analytics.summary) return { totalHours: '0', talkingHours: '0', lunchHours: '0', attendance: 'NA' };
+    
+    const working = analytics.summary.find((s: any) => s.action.includes('working'))?.total_seconds || 0;
+    const talking = analytics.summary.find((s: any) => s.action === 'talking')?.total_seconds || 0;
+    const eating = analytics.summary.find((s: any) => s.action === 'eating')?.total_seconds || 0;
+    
+    return {
+      totalHours: (working / 3600).toFixed(1),
+      talkingHours: (talking / 3600).toFixed(1),
+      lunchHours: (eating / 3600).toFixed(1),
+      attendance: '100%' // Placeholder for real attendance logic
+    };
+  }, [analytics]);
 
-  // Detailed activity breakdown
-  const activityBreakdown = [
-    { activity: 'Working', hours: 6.5, type: 'productive', color: '#06B6D4' },
-    { activity: 'Eating', hours: 1.0, type: 'productive', color: '#10B981' },
-    { activity: 'Discussing', hours: 0.8, type: 'productive', color: '#3B82F6' },
-    { activity: 'Talking', hours: 0.5, type: 'non-productive', color: '#EF4444' },
-    { activity: 'Smoking', hours: 0.2, type: 'non-productive', color: '#8B5CF6' },
-    { activity: 'Loitering', hours: 0.3, type: 'non-productive', color: '#64748B' },
-  ];
+  const pieData = useMemo(() => {
+    if (!analytics || !analytics.summary) return [];
+    return analytics.summary.map((s: any) => ({
+      name: s.action.charAt(0).toUpperCase() + s.action.slice(1),
+      value: parseFloat((s.total_seconds / 3600).toFixed(2))
+    }));
+  }, [analytics]);
 
-  const zoneData = history.length > 0 ? history[0].zones.map(z => ({
-    name: z.zone,
-    duration: history.reduce((acc, curr) => acc + (curr.zones.find(gz => gz.zone === z.zone)?.duration || 0), 0)
-  })) : [];
+  const activityBreakdown = useMemo(() => {
+    if (!analytics || !analytics.summary) return [];
+    return analytics.summary.map((s: any, idx: number) => ({
+      activity: s.action.charAt(0).toUpperCase() + s.action.slice(1),
+      hours: parseFloat((s.total_seconds / 3600).toFixed(2)),
+      type: s.action.includes('working') || s.action === 'eating' ? 'productive' : 'non-productive',
+      color: COLORS[idx % COLORS.length]
+    }));
+  }, [analytics]);
 
-  // Behavioral Profile Data (Radar)
+  const history = useMemo(() => {
+    if (!analytics || !analytics.timeline) return [];
+    return analytics.timeline;
+  }, [analytics]);
+
   const radarData = [
     { subject: 'Focus', A: 85, fullMark: 100 },
     { subject: 'Teamwork', A: 70, fullMark: 100 },
@@ -60,16 +85,9 @@ export function EmployeeAnalyticsDashboard({ employeeId, name }: Props) {
     { subject: 'Reliability', A: 80, fullMark: 100 },
   ];
 
-  // Heat map data for zones
   const heatmapData = [
-    { zone: 'Zone A', x: 0, y: 0, intensity: 0.85 },
-    { zone: 'Zone A', x: 1, y: 0, intensity: 0.7 },
-    { zone: 'Zone B', x: 0, y: 1, intensity: 0.6 },
-    { zone: 'Zone B', x: 1, y: 1, intensity: 0.9 },
-    { zone: 'Zone C', x: 0, y: 2, intensity: 0.3 },
-    { zone: 'Zone C', x: 1, y: 2, intensity: 0.2 },
-    { zone: 'Zone D', x: 0, y: 3, intensity: 0.1 },
-    { zone: 'Zone D', x: 1, y: 3, intensity: 0.15 },
+    { zone: 'Main Office', x: 0, y: 0, intensity: 0.85 },
+    { zone: 'Cafeteria', x: 1, y: 0, intensity: 0.2 },
   ];
 
   const getHeatColor = (intensity: number) => {
@@ -122,10 +140,10 @@ export function EmployeeAnalyticsDashboard({ employeeId, name }: Props) {
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Total Hours', value: `${summary.totalHours || 0}h`, icon: Clock, color: 'text-hive-text' },
-              { label: 'Talking Time', value: `${summary.totalTalking || 0}h`, icon: MessageSquare, color: 'text-blue-500' },
-              { label: 'Lunch Breaks', value: `${summary.totalLunch || 0}h`, icon: Utensils, color: 'text-hive-brand' },
-              { label: 'Attendance', value: `${summary.attendanceRate || 0}%`, icon: Zap, color: 'text-hive-success' },
+              { label: 'Total Hours', value: `${summaryStats.totalHours}h`, icon: Clock, color: 'text-hive-text' },
+              { label: 'Talking Time', value: `${summaryStats.talkingHours}h`, icon: MessageSquare, color: 'text-blue-500' },
+              { label: 'Lunch Breaks', value: `${summaryStats.lunchHours}h`, icon: Utensils, color: 'text-hive-brand' },
+              { label: 'Attendance', value: summaryStats.attendance, icon: Zap, color: 'text-hive-success' },
             ].map((stat) => (
               <div key={stat.label} className="bg-hive-text-10 border border-hive-border p-5 rounded-lg hover:bg-hive-text-20 transition-colors glass">
                 <div className="flex items-center gap-2 mb-3 text-hive-text-60">
@@ -283,26 +301,30 @@ export function EmployeeAnalyticsDashboard({ employeeId, name }: Props) {
                  </tr>
                </thead>
                <tbody className="divide-y divide-hive-border">
-                 {history.map((day, i) => (
+                 {history.length > 0 ? history.map((session: any, i: number) => (
                    <tr key={i} className="group hover:bg-hive-text-10 transition-colors">
-                     <td className="py-4 font-mono text-[11px] text-hive-text-80">{new Date(day.date).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                     <td className="py-4 font-mono text-[11px] text-hive-text-80">{new Date(session.start).toLocaleString()}</td>
                      <td className="py-4">
-                        <div className="text-xs font-black text-hive-text">{day.topActivity} Sequence</div>
-                        <div className="text-[9px] text-hive-text-30 uppercase tracking-widest">Zone A, B Correlation Verified</div>
+                        <div className="text-xs font-black text-hive-text">{session.action.toUpperCase()} Session</div>
+                        <div className="text-[9px] text-hive-text-30 uppercase tracking-widest">Zone Correlation Verified</div>
                      </td>
-                     <td className="py-4 text-center font-mono text-sm font-black text-hive-brand">{day.hoursWorked}h</td>
+                     <td className="py-4 text-center font-mono text-sm font-black text-hive-brand">{(session.duration / 60).toFixed(1)}m</td>
                      <td className="py-4 text-center">
                         <span className="px-2 py-1 bg-hive-text-10 border border-hive-border rounded text-[8px] font-black uppercase tracking-widest text-hive-text-60">
-                           {day.hoursWorked > 7 ? 'Optimal' : 'Low Intensity'}
+                           {session.duration > 300 ? 'Sustained' : 'Short'}
                         </span>
                      </td>
                      <td className="py-4 text-right">
                         <div className="text-[10px] font-black font-mono text-hive-text-20 uppercase tracking-widest">
-                           HASH: 0x{Math.random().toString(16).slice(2, 10).toUpperCase()}
+                           {session.node_id || 'LOCAL'}
                         </div>
                      </td>
                    </tr>
-                 ))}
+                 )) : (
+                   <tr>
+                     <td colSpan={5} className="py-8 text-center text-hive-text-30 font-black uppercase tracking-widest">No Activity Records Found (N/A)</td>
+                   </tr>
+                 )}
                </tbody>
              </table>
            </div>
@@ -314,18 +336,21 @@ export function EmployeeAnalyticsDashboard({ employeeId, name }: Props) {
         <div className="glass p-8 rounded-lg space-y-6">
           <h4 className="text-[12px] font-black uppercase tracking-[0.2em] text-hive-text">Employee Daily Journal</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-4 custom-scrollbar">
-            {history.slice(0, 10).map((day, i) => (
+            {history.slice(0, 10).map((session: any, i: number) => (
               <div key={i} className="p-4 bg-hive-text-5 border border-hive-border rounded-lg flex justify-between items-center group hover:bg-hive-text-10 transition-all">
                 <div>
-                  <div className="text-xs font-black text-hive-text-80">{new Date(day.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</div>
-                  <div className="text-[9px] font-black uppercase text-hive-text-30 tracking-widest">{day.topActivity}</div>
+                  <div className="text-xs font-black text-hive-text-80">{new Date(session.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                  <div className="text-[9px] font-black uppercase text-hive-text-30 tracking-widest">{session.action}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-black text-hive-brand">{day.hoursWorked}h</div>
-                  <div className="text-[9px] text-hive-text-30 font-mono">HASH: 0x{Math.random().toString(16).slice(2, 10).toUpperCase()}</div>
+                  <div className="text-sm font-black text-hive-brand">{(session.duration / 60).toFixed(1)}m</div>
+                  <div className="text-[9px] text-hive-text-30 font-mono">NODE: {session.node_id || 'N/A'}</div>
                 </div>
               </div>
             ))}
+            {history.length === 0 && (
+              <div className="col-span-2 text-center py-8 text-hive-text-20 font-black uppercase tracking-widest">N/A</div>
+            )}
           </div>
         </div>
       )}
